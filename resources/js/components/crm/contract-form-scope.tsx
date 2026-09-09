@@ -4,6 +4,7 @@ import { Field } from '@/components/crm/field';
 import { FormTotals, TotalsRow } from '@/components/crm/form-totals';
 import { LineItemsEditor } from '@/components/crm/line-items';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { writeScopePoints } from '@/lib/crm/scope-points';
 import { rupiah } from '@/lib/format';
 import type { ServiceOption } from '@/types/crm';
@@ -12,12 +13,14 @@ export function ContractFormScope({
   form,
   services,
   subtotal,
+  base,
   tax,
   aiScopePoints,
 }: {
   form: InertiaForm<ContractFormData>;
   services: ServiceOption[];
   subtotal: number;
+  base: number;
   tax: number;
   aiScopePoints: boolean;
 }) {
@@ -42,29 +45,38 @@ export function ContractFormScope({
       />
 
       <FormTotals>
-        <Field
-          label="PPN (%)"
-          htmlFor="tax_percent"
-          className="max-w-40"
-          error={form.errors.tax_percent}
-        >
-          <Input
-            id="tax_percent"
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            value={form.data.tax_percent}
-            onChange={(e) => form.setData('tax_percent', e.target.value)}
-            placeholder="11"
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Diskon" htmlFor="discount_amount" error={form.errors.discount_amount}>
+            <MoneyInput
+              id="discount_amount"
+              value={form.data.discount_amount}
+              onChange={(value) => form.setData('discount_amount', value)}
+              placeholder="0"
+            />
+          </Field>
+
+          <Field label="PPN (%)" htmlFor="tax_percent" error={form.errors.tax_percent}>
+            <Input
+              id="tax_percent"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={form.data.tax_percent}
+              onChange={(e) => form.setData('tax_percent', e.target.value)}
+              placeholder="11"
+            />
+          </Field>
+        </div>
 
         <dl className="space-y-2 border-t pt-4 text-sm">
           <TotalsRow label="Subtotal">{rupiah(subtotal)}</TotalsRow>
+          {Number(form.data.discount_amount) > 0 && (
+            <TotalsRow label="Diskon">-{rupiah(form.data.discount_amount)}</TotalsRow>
+          )}
           <TotalsRow label="PPN">{rupiah(tax)}</TotalsRow>
           <TotalsRow label="Nilai kontrak" strong>
-            {rupiah(subtotal + tax)}
+            {rupiah(base + tax)}
           </TotalsRow>
         </dl>
       </FormTotals>

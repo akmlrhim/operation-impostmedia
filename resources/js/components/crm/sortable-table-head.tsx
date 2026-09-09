@@ -26,7 +26,7 @@ export function SortableTableHead({
         type="button"
         onClick={onClick}
         className={cn(
-          '-m-1 inline-flex items-center gap-1 rounded p-1 transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          '-m-1 inline-flex cursor-pointer items-center gap-1 rounded p-1 transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50',
           active && 'text-foreground',
         )}
       >

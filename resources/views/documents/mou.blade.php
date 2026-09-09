@@ -8,14 +8,14 @@
 
 <p>
     Pada hari ini, {{ $tanggal($contract->signed_date) }}, bertempat di
-    {{ $contract->signing_place ?: $company->city }}, yang bertanda tangan di bawah ini:
+    {{ $contract->signing_place ?: $profile['city'] }}, yang bertanda tangan di bawah ini:
 </p>
 
 <p>
-    <strong>1. {{ $contract->first_party_name ?: $company->signatory_name }}</strong><br>
-    Jabatan: {{ $contract->first_party_position ?: $company->signatory_position }}<br>
-    Dalam hal ini bertindak untuk dan atas nama <strong>{{ $company->name }}</strong>,
-    berkedudukan di {{ $company->address }},
+    <strong>1. {{ $contract->first_party_name ?: $profile['signatory_name'] }}</strong><br>
+    Jabatan: {{ $contract->first_party_position ?: $profile['signatory_position'] }}<br>
+    Dalam hal ini bertindak untuk dan atas nama <strong>{{ $profile['name'] }}</strong>,
+    berkedudukan di {{ $profile['address'] }},
     selanjutnya disebut sebagai <strong>PIHAK PERTAMA</strong>.
 </p>
 
@@ -36,9 +36,6 @@
 <p>{{ $contract->title }}</p>
 
 <h2>Pasal 2 &mdash; Ruang Lingkup Pekerjaan</h2>
-@if ($contract->scope)
-    <p>{{ $contract->scope }}</p>
-@endif
 <table>
     <thead>
         <tr>
@@ -86,7 +83,7 @@
 
 <h2>Pasal 4 &mdash; Nilai dan Tata Cara Pembayaran</h2>
 <p>Nilai pekerjaan adalah sebesar {{ $rupiah($contract->value) }}.</p>
-<p>{{ $contract->payment_terms ?: 'Pembayaran dilakukan sesuai invoice yang diterbitkan PIHAK PERTAMA.' }}</p>
+<p>Pembayaran dilakukan sesuai invoice yang diterbitkan PIHAK PERTAMA.</p>
 
 <h2>Pasal 5 &mdash; Hak dan Kewajiban</h2>
 <p>
@@ -121,7 +118,7 @@
 
 <table>
     <tr>
-        <td>PIHAK PERTAMA<br>{{ $company->name }}</td>
+        <td>PIHAK PERTAMA<br>{{ $profile['name'] }}</td>
         <td>PIHAK KEDUA<br>{{ $client->company_name }}</td>
     </tr>
     <tr>
@@ -131,8 +128,8 @@
             @else
                 <br><br><br>
             @endif
-            <u>{{ $contract->first_party_name ?: $company->signatory_name }}</u><br>
-            {{ $contract->first_party_position ?: $company->signatory_position }}
+            <u>{{ $contract->first_party_name ?: $profile['signatory_name'] }}</u><br>
+            {{ $contract->first_party_position ?: $profile['signatory_position'] }}
         </td>
         <td>
             <br><br><br>

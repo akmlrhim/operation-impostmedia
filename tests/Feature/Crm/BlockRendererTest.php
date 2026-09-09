@@ -76,6 +76,56 @@ class BlockRendererTest extends TestCase
         );
     }
 
+    /**
+     * Coretan yang menimpa e-meterai menutupi kode QR-nya, dan MoU yang sudah
+     * dicetak begitu tidak bisa diverifikasi lagi.
+     */
+    public function test_the_signature_stands_clear_of_the_e_stamp(): void
+    {
+        $stamp = 'data:image/png;base64,STAMP';
+        $signature = 'data:image/png;base64,SIGNATURE';
+
+        $html = app(BlockRenderer::class)->render(
+            BlockSchema::normalize([[
+                'type' => BlockSchema::SIGNATURE,
+                'columns' => [
+                    ['title' => 'THE COMPANY', 'rows' => [], 'caption' => 'CEO', 'name' => 'Fadel', 'stamp' => true, 'signature' => true],
+                ],
+            ]]),
+            BlockSchema::settingDefaults(),
+            DocumentVariables::sample(),
+            ['stamp' => $stamp, 'signature' => $signature],
+        );
+
+        $this->assertStringContainsString($stamp, $html);
+        $this->assertStringContainsString($signature, $html);
+
+        $marks = $this->markRow($html);
+
+        $this->assertStringNotContainsString(
+            'position: absolute',
+            $marks,
+            'Meterai dan tanda tangan kembali ditumpuk, jadi coretannya menutupi kode QR e-meterai.',
+        );
+
+        $this->assertStringContainsString('text-align: center', $marks);
+        $this->assertMatchesRegularExpression(
+            '/'.preg_quote($signature, '/').'"[^>]*margin-left: \d+px/',
+            $marks,
+            'Tanda tangan harus punya jarak kiri supaya tidak menempel ke meterai.',
+        );
+    }
+
+    private function markRow(string $html): string
+    {
+        $rows = explode('</td>', $html);
+        $marks = array_values(array_filter($rows, fn (string $row): bool => str_contains($row, 'SIGNATURE')));
+
+        $this->assertCount(1, $marks);
+
+        return $marks[0];
+    }
+
     public function test_items_table_totals_follow_the_contract(): void
     {
         $contract = $this->makeContract();

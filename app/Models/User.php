@@ -20,7 +20,6 @@ use Illuminate\Support\Carbon;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string|null $remember_token
- * @property string|null $phone
  * @property UserRole $role
  * @property bool $is_active
  * @property Carbon|null $approved_at
@@ -29,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property-read GoogleAccount|null $googleAccount
  * @property-read string|null $avatar
  */
-#[Fillable(['name', 'email', 'phone', 'role', 'is_active'])]
+#[Fillable(['name', 'email', 'role', 'is_active'])]
 #[Hidden(['remember_token'])]
 class User extends Authenticatable
 {
@@ -73,20 +72,6 @@ class User extends Authenticatable
     public function googleAccount(): HasOne
     {
         return $this->hasOne(GoogleAccount::class);
-    }
-
-    /**
-     * @return HasMany<Lead, $this>
-     */
-    public function leads(): HasMany
-    {
-        return $this->hasMany(Lead::class, 'owner_id');
-    }
-
-    /** @return HasMany<Client, $this> */
-    public function clients(): HasMany
-    {
-        return $this->hasMany(Client::class, 'account_manager_id');
     }
 
     /** @return HasMany<Activity, $this> */

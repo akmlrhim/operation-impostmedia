@@ -92,7 +92,7 @@ export function ServicePackageCombobox({
                 {selected.service.type_label}
               </Badge>
               <span className="truncate">
-                {selected.service.name} — {selected.package.name}
+                {selected.service.name} - {selected.package.name}
               </span>
             </span>
           ) : (
@@ -137,7 +137,7 @@ export function ServicePackageCombobox({
                   key={servicePackage.id}
                   type="button"
                   onClick={() => pick(servicePackage.id)}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
                   <Check
                     aria-hidden

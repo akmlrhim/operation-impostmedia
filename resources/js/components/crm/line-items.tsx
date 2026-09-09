@@ -88,7 +88,7 @@ export function LineItemsEditor({
 
     update(index, {
       service_package_id: picked.id,
-      name: `${service.name} — ${picked.name}`,
+      name: `${service.name} - ${picked.name}`,
       unit: picked.unit,
       unit_price: picked.price,
       description: picked.points.map((point) => point.label).join('\n') || null,

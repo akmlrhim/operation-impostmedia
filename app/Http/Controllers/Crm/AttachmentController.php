@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
-    public const DISK = 'public';
+    public const DISK = 'local';
 
     /**
      * @var array<string, class-string<Lead|Client|Contract|Invoice>>
@@ -38,7 +38,7 @@ class AttachmentController extends Controller
             'name' => $request->string('name')->toString() ?: $file->getClientOriginalName(),
             'path' => $file->store('attachments/'.$type, self::DISK),
             'disk' => self::DISK,
-            'mime_type' => $file->getClientMimeType(),
+            'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
             'size' => $file->getSize(),
             'uploaded_by' => auth()->id(),
         ]);

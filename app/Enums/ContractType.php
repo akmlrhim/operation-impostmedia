@@ -20,9 +20,4 @@ enum ContractType: string implements HasLabel
             self::Contract => 'Perjanjian Kerja Sama',
         };
     }
-
-    public function prefix(): string
-    {
-        return strtoupper($this->value);
-    }
 }

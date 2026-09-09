@@ -168,7 +168,7 @@ class ContractClausesTest extends TestCase
         $contract->refresh();
 
         $this->assertSame(['Poin dari AI.'], $contract->ai_clauses[self::CLAUSE_ID]);
-        $this->assertStringContainsString('Poin dari AI.', (string) $contract->body);
+        $this->assertStringContainsString('Poin dari AI.', (string) $contract->renderedBody());
     }
 
     public function test_finalizing_never_overwrites_clauses_a_person_has_corrected(): void
@@ -180,7 +180,7 @@ class ContractClausesTest extends TestCase
 
         $this->post(route('contracts.finalize', $contract));
 
-        $this->assertStringContainsString('Poin hasil koreksi manusia.', (string) $contract->refresh()->body);
+        $this->assertStringContainsString('Poin hasil koreksi manusia.', (string) $contract->renderedBody());
         Http::assertNothingSent();
     }
 
@@ -194,7 +194,7 @@ class ContractClausesTest extends TestCase
 
         $contract->refresh();
 
-        $this->assertStringContainsString('Menyediakan logo, profil perusahaan', (string) $contract->body);
+        $this->assertStringContainsString('Menyediakan logo, profil perusahaan', (string) $contract->renderedBody());
         $this->assertNotNull($contract->file_path);
     }
 
@@ -223,10 +223,8 @@ class ContractClausesTest extends TestCase
         Http::fake();
 
         $contract = $this->makeContract();
-        $contract->update([
-            'ai_clauses' => [self::CLAUSE_ID => ['Poin tulisan AI.']],
-            'document_body' => '<p>Dokumen hasil suntingan sendiri.</p>',
-        ]);
+        $contract->update(['ai_clauses' => [self::CLAUSE_ID => ['Poin tulisan AI.']]]);
+        $contract->saveEditedBody('<p>Dokumen hasil suntingan sendiri.</p>');
 
         $html = app(RenderContractDocument::class)->handle($contract, persist: false);
 

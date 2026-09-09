@@ -1,32 +1,45 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
+import { Receipt } from 'lucide-react';
 import { StatusBadge } from '@/components/crm/status-badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, rupiah } from '@/lib/format';
+import { invoice as createInvoice } from '@/routes/contracts';
 import { show as showInvoice } from '@/routes/invoices';
 import type { Contract } from '@/types/crm';
 
 export function ContractShowInvoicesCard({
   contract,
-  canInvoice,
+  invoiceBlocker,
 }: {
   contract: Contract;
-  canInvoice: boolean;
+  invoiceBlocker: string | null;
 }) {
+  const invoices = contract.invoices ?? [];
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Invoice terkait</CardTitle>
+      <CardHeader className="flex-row flex-wrap items-center gap-3">
+        <CardTitle className="mr-auto text-base">Invoice terkait</CardTitle>
+
+        {invoiceBlocker === null && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.post(createInvoice(contract.id), {}, { preserveScroll: true })}
+          >
+            <Receipt className="size-4" />
+            Buat invoice
+          </Button>
+        )}
       </CardHeader>
+
       <CardContent className="space-y-2">
-        {(contract.invoices?.length ?? 0) === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {canInvoice
-              ? 'Belum ada invoice diterbitkan.'
-              : 'MoU harus ditandatangani dulu sebelum bisa ditagihkan.'}
-          </p>
+        {invoices.length === 0 && (
+          <p className="text-sm text-muted-foreground">Belum ada invoice untuk MoU ini.</p>
         )}
 
-        {contract.invoices?.map((invoice) => (
+        {invoices.map((invoice) => (
           <Link
             key={invoice.id}
             href={showInvoice(invoice.id)}
@@ -42,6 +55,10 @@ export function ContractShowInvoicesCard({
             </div>
           </Link>
         ))}
+
+        {invoiceBlocker !== null && (
+          <p className="text-xs text-muted-foreground">{invoiceBlocker}</p>
+        )}
       </CardContent>
     </Card>
   );

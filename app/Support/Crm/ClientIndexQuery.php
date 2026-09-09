@@ -16,7 +16,6 @@ class ClientIndexQuery
     private const SORTABLE = [
         'company_name' => 'clients.company_name',
         'contact_name' => 'clients.contact_name',
-        'account_manager' => 'users.name',
         'status' => 'clients.status',
     ];
 
@@ -31,7 +30,6 @@ class ClientIndexQuery
             ->when($filterClientId, fn ($q) => $q->whereKey($filterClientId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->with([
-                'accountManager:id,name',
                 'contracts' => fn ($q) => $q
                     ->select(['id', 'client_id', 'number', 'title', 'value', 'status'])
                     ->latest('id')
@@ -44,10 +42,6 @@ class ClientIndexQuery
             ->withCount(['contracts', 'invoices']);
 
         if (array_key_exists($sort, self::SORTABLE)) {
-            if ($sort === 'account_manager') {
-                $query->leftJoin('users', 'users.id', '=', 'clients.account_manager_id');
-            }
-
             $query->orderBy(self::SORTABLE[$sort], $direction);
         } else {
             $query->latest('clients.id');

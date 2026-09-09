@@ -4,9 +4,9 @@ namespace App\Actions\Crm;
 
 use App\Enums\ContractType;
 use App\Exceptions\AiUnavailable;
-use App\Models\CompanySetting;
 use App\Models\Contract;
 use App\Support\Ai\Groq;
+use App\Support\CompanyProfile;
 use App\Support\Documents\BlockSchema;
 use App\Support\Documents\DocumentVariables;
 use App\Support\Documents\MouTemplate;
@@ -38,6 +38,14 @@ class WriteContractClauses
 
     private const MAX_POINTS = 10;
 
+    /** Beberapa pasal sekaligus, jadi jatahnya lebih longgar dari rincian baris. */
+    private const MAX_TOKENS = 2500;
+
+    /** Catatan baris bisa panjang sekali; yang dikirim cukup intinya. */
+    private const MAX_NOTE_LINES = 4;
+
+    private const MAX_NOTE_CHARS = 160;
+
     public function __construct(private readonly Groq $groq) {}
 
     /**
@@ -53,7 +61,12 @@ class WriteContractClauses
             return [];
         }
 
-        $answer = $this->groq->json(self::SYSTEM, $this->prompt($contract, $blocks), temperature: 0.3);
+        $answer = $this->groq->json(
+            self::SYSTEM,
+            $this->prompt($contract, $blocks),
+            temperature: 0.3,
+            maxTokens: self::MAX_TOKENS,
+        );
         $clauses = $this->clauses($answer, $blocks);
 
         $contract->update([
@@ -79,11 +92,9 @@ class WriteContractClauses
      */
     private function prompt(Contract $contract, array $blocks): string
     {
-        $company = CompanySetting::current();
-
         $lines = [
-            'PIHAK PERTAMA — klien yang membeli jasa: '.$contract->client?->company_name,
-            'PIHAK KEDUA — agensi yang mengerjakan: '.$company->name,
+            'PIHAK PERTAMA, klien yang membeli jasa: '.$contract->client?->company_name,
+            'PIHAK KEDUA, agensi yang mengerjakan: '.CompanyProfile::name(),
             'Judul pekerjaan: '.$contract->title,
             'Jangka waktu: '.DocumentVariables::forContract($contract)['dokumen.durasi'],
             '',
@@ -92,21 +103,24 @@ class WriteContractClauses
 
         foreach ($contract->items as $item) {
             $visitHint = $item->servicePackage?->requires_visit
-                ? ' — sudah ditandai admin sebagai layanan yang butuh kunjungan lokasi'
+                ? ' (sudah ditandai admin sebagai layanan yang butuh kunjungan lokasi)'
                 : '';
 
             $lines[] = '- '.$item->name.' ('.(int) $item->quantity.' '.$item->unit.')'.$visitHint;
 
-            foreach (preg_split('/\r\n|\r|\n/', (string) $item->description) ?: [] as $point) {
-                if (trim($point) !== '') {
-                    $lines[] = '  · '.trim($point);
-                }
-            }
-        }
+            $notes = 0;
 
-        if ($contract->scope) {
-            $lines[] = '';
-            $lines[] = 'Catatan ruang lingkup: '.$contract->scope;
+            foreach (preg_split('/\r\n|\r|\n/', (string) $item->description) ?: [] as $point) {
+                if (trim($point) === '') {
+                    continue;
+                }
+
+                if (++$notes > self::MAX_NOTE_LINES) {
+                    break;
+                }
+
+                $lines[] = '  · '.mb_substr(trim($point), 0, self::MAX_NOTE_CHARS);
+            }
         }
 
         $lines[] = '';
@@ -115,7 +129,7 @@ class WriteContractClauses
         foreach ($blocks as $id => $block) {
             $count = max(1, min(self::MAX_POINTS, (int) $block['count']));
 
-            $lines[] = "- id \"{$id}\": {$block['topic']} — tulis {$count} poin";
+            $lines[] = "- id \"{$id}\": {$block['topic']}, tulis {$count} poin";
 
             if (trim((string) $block['instruction']) !== '') {
                 $lines[] = '  arahan tambahan: '.$block['instruction'];
@@ -176,6 +190,8 @@ class WriteContractClauses
             if (! is_string($point)) {
                 continue;
             }
+
+            $point = str_replace("\u{2014}", '-', $point);
 
             $clean = trim(preg_replace('/^\s*(?:[-*\x{2022}]|\d+[.)]|[a-z][.)])\s*/ui', '', $point) ?? '');
 

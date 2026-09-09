@@ -168,8 +168,8 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
             <h3 className="text-sm font-medium">Paket</h3>
             <p className="text-xs text-muted-foreground">
               Harga menempel di paket, bukan di layanan. Poinnya ikut terisi jadi rincian saat paket
-              dipilih di MoU atau invoice. Paket yang ditandai butuh kunjungan lokasi akan memunculkan
-              pasal Ketentuan Visit di MoU yang memesannya.
+              dipilih di MoU atau invoice. Paket yang ditandai butuh kunjungan lokasi akan
+              memunculkan pasal Ketentuan Visit di MoU yang memesannya.
             </p>
           </div>
         </div>

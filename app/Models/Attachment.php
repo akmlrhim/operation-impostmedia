@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Models\Concerns\BroadcastsCrmChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
@@ -22,12 +21,6 @@ class Attachment extends Model
         return [
             'size' => 'integer',
         ];
-    }
-
-    /** @return MorphTo<Model, $this> */
-    public function attachable(): MorphTo
-    {
-        return $this->morphTo();
     }
 
     /** @return BelongsTo<User, $this> */

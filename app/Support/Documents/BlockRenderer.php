@@ -9,6 +9,14 @@ class BlockRenderer
 {
     private const ALLOWED_TAGS = '<p><br><strong><b><em><i><u><s><sup><sub>';
 
+    /**
+     * Meterai dan tanda tangan berdiri berdampingan, bukan bertumpuk: coretan
+     * yang menimpa e-meterai menutupi kode QR-nya dan bikin verifikasinya gagal.
+     *
+     * @var array<string, string>
+     */
+    private const MARK_ROW = ['height' => '96px', 'text-align' => 'center', 'white-space' => 'nowrap'];
+
     /** @var array<string, string> */
     private array $variables = [];
 
@@ -383,6 +391,10 @@ class BlockRenderer
             $foot .= $this->totalRow($span, 'Subtotal', DocumentVariables::rupiah($this->contract->subtotal));
         }
 
+        if ($block['showDiscount'] && (float) $this->contract->discount_amount > 0) {
+            $foot .= $this->totalRow($span, 'Diskon', '-'.DocumentVariables::rupiah($this->contract->discount_amount));
+        }
+
         if ($block['showTax'] && (float) $this->contract->tax_amount > 0) {
             $foot .= $this->totalRow($span, 'PPN '.(int) $this->contract->tax_percent.'%', DocumentVariables::rupiah($this->contract->tax_amount));
         }
@@ -486,16 +498,16 @@ class BlockRenderer
             $name = trim((string) ($column['name'] ?? ''));
 
             $stamp = ($column['stamp'] ?? false) ? $this->image('stamp') : null;
-            $signature = ($column['signature'] ?? false) ? $this->image('signature') : null;
+            $signature = $this->mark($column['signature'] ?? false, 'signature');
 
             $marks = match (true) {
-                $stamp !== null && $signature !== null => '<div'.$this->style(['height' => '80px', 'position' => 'relative']).'>'
-                    .'<img src="'.$stamp.'"'.$this->style(['position' => 'absolute', 'top' => '0', 'left' => '0', 'width' => '90px']).'>'
-                    .'<img src="'.$signature.'"'.$this->style(['position' => 'absolute', 'top' => '6px', 'left' => '46px', 'width' => '120px']).'>'
+                $stamp !== null && $signature !== null => '<div'.$this->style(self::MARK_ROW).'>'
+                    .'<img src="'.$stamp.'"'.$this->style(['width' => '90px', 'vertical-align' => 'middle']).'>'
+                    .'<img src="'.$signature.'"'.$this->style(['width' => '120px', 'vertical-align' => 'middle', 'margin-left' => '24px']).'>'
                     .'</div>',
-                $stamp !== null => '<div'.$this->style(['height' => '80px']).'><img src="'.$stamp.'"'.$this->style(['width' => '90px']).'></div>',
-                $signature !== null => '<div'.$this->style(['height' => '80px']).'><img src="'.$signature.'"'.$this->style(['width' => '120px']).'></div>',
-                default => '<div'.$this->style(['height' => '80px']).'></div>',
+                $stamp !== null => '<div'.$this->style(self::MARK_ROW).'><img src="'.$stamp.'"'.$this->style(['width' => '90px', 'vertical-align' => 'middle']).'></div>',
+                $signature !== null => '<div'.$this->style(self::MARK_ROW).'><img src="'.$signature.'"'.$this->style(['width' => '120px', 'vertical-align' => 'middle']).'></div>',
+                default => '<div'.$this->style(['height' => '96px']).'></div>',
             };
 
             $identity .= '<td'.$this->style([...$base, 'vertical-align' => 'top']).'>'
@@ -690,6 +702,19 @@ class BlockRenderer
             },
             $text,
         ) ?? $text;
+    }
+
+    /**
+     * Kolom tanda tangan boleh menunjuk gambar lain, misalnya spesimen klien
+     * yang diunggah per MoU, dengan mengisi nama kuncinya alih-alih true.
+     */
+    private function mark(mixed $value, string $fallback): ?string
+    {
+        if ($value === false || $value === null || $value === '') {
+            return null;
+        }
+
+        return $this->image(is_string($value) ? $value : $fallback);
     }
 
     private function image(string $key): ?string

@@ -16,13 +16,4 @@ enum LeadStatus: string implements HasLabel
             self::Lost => 'Gagal',
         };
     }
-
-    public function color(): string
-    {
-        return match ($this) {
-            self::Open => 'blue',
-            self::Won => 'green',
-            self::Lost => 'red',
-        };
-    }
 }

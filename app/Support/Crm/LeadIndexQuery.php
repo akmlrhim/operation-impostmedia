@@ -5,6 +5,7 @@ namespace App\Support\Crm;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadStage;
+use App\Models\ServicePackage;
 use App\Support\ListPage;
 use Illuminate\Http\Request;
 
@@ -16,14 +17,24 @@ class LeadIndexQuery
      * @var array<string, string>
      */
     private const SORTABLE = [
+        'date_in' => 'leads.date_in',
         'company_name' => 'leads.company_name',
+        'industry' => 'leads.industry',
         'contact_name' => 'leads.contact_name',
+        'region' => 'leads.region',
+        'source' => 'leads.source',
         'stage' => 'lead_stages.position',
-        'priority' => 'leads.priority',
+        'temperature' => 'leads.temperature',
         'estimated_value' => 'leads.estimated_value',
-        'expected_close_date' => 'leads.expected_close_date',
+        'last_contact_date' => 'leads.last_contact_date',
+        'next_action_date' => 'leads.next_action_date',
         'status' => 'leads.status',
     ];
+
+    /**
+     * @var list<string>
+     */
+    private const RELATIONS = ['stage:id,name,color,type', 'servicePackages:id,name,price', 'latestInvoice'];
 
     /**
      * @return list<array<string, mixed>>
@@ -35,7 +46,7 @@ class LeadIndexQuery
             ->withCount('leads')
             ->withSum('leads', 'estimated_value')
             ->with(['leads' => fn ($q) => $q
-                ->with('owner:id,name')
+                ->with(self::RELATIONS)
                 ->orderBy('position')
                 ->limit(self::KANBAN_PER_COLUMN),
             ])
@@ -57,7 +68,7 @@ class LeadIndexQuery
         $leads = Lead::query()
             ->when($filterStageId, fn ($q) => $q->where('lead_stage_id', $filterStageId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->with(['stage:id,name,color,type', 'owner:id,name']);
+            ->with(self::RELATIONS);
 
         if (array_key_exists($sort, self::SORTABLE)) {
             if ($sort === 'stage') {
@@ -72,7 +83,7 @@ class LeadIndexQuery
 
         return [
             'leads' => ListPage::of($leads)->through(fn (Lead $lead): array => [
-                ...self::mapLead($lead),
+                ...self::card($lead),
                 'stage' => $lead->stage?->only(['id', 'name', 'color']),
             ]),
             'filters' => [
@@ -96,32 +107,50 @@ class LeadIndexQuery
             'type' => $stage->type->value,
             'total' => (float) $stage->getAttribute('leads_sum_estimated_value'),
             'count' => (int) $stage->getAttribute('leads_count'),
-            'leads' => $stage->leads->map(fn (Lead $lead): array => self::mapLead($lead))->all(),
+            'leads' => $stage->leads->map(fn (Lead $lead): array => self::card($lead))->all(),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private static function mapLead(Lead $lead): array
+    public static function card(Lead $lead): array
     {
         return [
             'id' => $lead->id,
+            'date_in' => $lead->date_in->toDateString(),
             'company_name' => $lead->company_name,
+            'industry' => $lead->industry,
             'contact_name' => $lead->contact_name,
             'email' => $lead->email,
             'phone' => $lead->phone,
+            'region' => $lead->region,
             'source' => $lead->source?->value,
+            'pic' => $lead->pic,
+            'pic_impost' => $lead->pic_impost,
+            'service_packages' => $lead->servicePackages
+                ->map(fn (ServicePackage $package): array => [
+                    'id' => $package->id,
+                    'name' => $package->name,
+                    'price' => (float) $package->price,
+                ])
+                ->values()
+                ->all(),
+            'last_invoice' => $lead->latestInvoice === null ? null : [
+                'id' => $lead->latestInvoice->id,
+                'number' => $lead->latestInvoice->number,
+                'issue_date' => $lead->latestInvoice->issue_date->toDateString(),
+            ],
             'estimated_value' => (float) $lead->estimated_value,
-            'priority' => $lead->priority->value,
-            'status' => $lead->status->value,
-            'owner' => $lead->owner?->only(['id', 'name']),
-            'owner_id' => $lead->owner_id,
-            'lost_reason' => $lead->lost_reason,
-            'expected_close_date' => $lead->expected_close_date?->toDateString(),
-            'next_follow_up_at' => $lead->next_follow_up_at?->toDateTimeString(),
-            'converted_client_id' => $lead->converted_client_id,
+            'last_contact_date' => $lead->last_contact_date?->toDateString(),
+            'next_action_date' => $lead->next_action_date?->toDateString(),
+            'next_action' => $lead->next_action,
+            'temperature' => $lead->temperature->value,
             'notes' => $lead->notes,
+            'folder_url' => $lead->folder_url,
+            'status' => $lead->status->value,
+            'lost_reason' => $lead->lost_reason,
+            'converted_client_id' => $lead->converted_client_id,
         ];
     }
 }

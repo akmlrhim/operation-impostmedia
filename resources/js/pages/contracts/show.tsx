@@ -1,4 +1,5 @@
 import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { AttachmentsCard } from '@/components/crm/attachments';
 import { useConfirm } from '@/components/crm/confirm-dialog';
 import { ContractShowActions } from '@/components/crm/contracts/contract-show-actions';
@@ -6,34 +7,41 @@ import { ContractShowClausesCard } from '@/components/crm/contracts/contract-sho
 import { ContractShowInvoicesCard } from '@/components/crm/contracts/contract-show-invoices-card';
 import { ContractShowScopeCard } from '@/components/crm/contracts/contract-show-scope-card';
 import { ContractShowSummaryCard } from '@/components/crm/contracts/contract-show-summary-card';
+import { ContractSignModal } from '@/components/crm/contracts/contract-sign-modal';
 import { PageHeader } from '@/components/crm/page-header';
 import { useRealtime } from '@/hooks/use-realtime';
 import { destroy, index, show } from '@/routes/contracts';
-import type { Contract, ContractClause, Option } from '@/types/crm';
+import type { CompanyIdentity, Contract, ContractClause, Option } from '@/types/crm';
 
 type Props = {
   contract: Contract;
+  company: CompanyIdentity;
+  invoiceBlocker: string | null;
   types: Option[];
   statuses: Option[];
   billingCycles: Option[];
   clauses: ContractClause[];
   aiClauses: boolean;
   documentEdited: boolean;
+  signatureUrl: string | null;
 };
 
 export default function ContractShow({
   contract,
+  company,
+  invoiceBlocker,
   types,
   statuses,
   billingCycles,
   clauses,
   aiClauses,
   documentEdited,
+  signatureUrl,
 }: Props) {
   useRealtime(['contracts', 'attachments'], ['contract']);
 
-  const canInvoice = ['signed', 'active', 'completed'].includes(contract.status);
   const [confirm, confirmDialog] = useConfirm();
+  const [signModal, setSignModal] = useState(false);
 
   return (
     <>
@@ -45,8 +53,8 @@ export default function ContractShow({
           actions={
             <ContractShowActions
               contract={contract}
-              canInvoice={canInvoice}
               confirm={confirm}
+              onSign={() => setSignModal(true)}
               onDelete={() => router.delete(destroy(contract.id))}
             />
           }
@@ -69,11 +77,12 @@ export default function ContractShow({
           <div className="space-y-4">
             <ContractShowSummaryCard
               contract={contract}
+              company={company}
               types={types}
               statuses={statuses}
               billingCycles={billingCycles}
             />
-            <ContractShowInvoicesCard contract={contract} canInvoice={canInvoice} />
+            <ContractShowInvoicesCard contract={contract} invoiceBlocker={invoiceBlocker} />
           </div>
         </div>
 
@@ -83,6 +92,14 @@ export default function ContractShow({
           attachments={contract.attachments ?? []}
         />
       </div>
+
+      {signModal && (
+        <ContractSignModal
+          contract={contract}
+          signatureUrl={signatureUrl}
+          onClose={() => setSignModal(false)}
+        />
+      )}
 
       {confirmDialog}
     </>

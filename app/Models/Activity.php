@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\ActivityType;
 use App\Models\Concerns\BroadcastsCrmChanges;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -47,15 +46,5 @@ class Activity extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * @param  Builder<Activity>  $query
-     */
-    public function scopeUpcoming(Builder $query): void
-    {
-        $query->whereNull('completed_at')
-            ->whereNotNull('scheduled_at')
-            ->orderBy('scheduled_at');
     }
 }

@@ -16,7 +16,9 @@ function Cell({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3 md:block md:text-right">
-      <span className="text-xs text-muted-foreground md:hidden">{label}</span>
+      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase md:hidden">
+        {label}
+      </span>
       <span className={strong ? 'font-medium' : undefined}>{children}</span>
     </div>
   );
@@ -35,7 +37,7 @@ export function DocumentItems({ items }: { items: LineItem[] }) {
     <div className="rounded-lg border">
       <div
         className={cn(
-          'hidden gap-4 border-b bg-muted/60 px-4 py-2 text-xs font-medium text-muted-foreground md:grid',
+          'hidden gap-4 border-b bg-muted/60 px-4 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase md:grid',
           COLUMNS,
         )}
       >

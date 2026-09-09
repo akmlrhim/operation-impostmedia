@@ -55,15 +55,6 @@ class LeadStageController extends Controller
 
     public function destroy(LeadStage $leadStage): RedirectResponse
     {
-        if ($leadStage->leads()->exists()) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => 'Kolom masih berisi lead. Pindahkan dulu kartunya sebelum menghapus.',
-            ]);
-
-            return back();
-        }
-
         if (LeadStage::query()->count() <= 1) {
             Inertia::flash('toast', [
                 'type' => 'error',

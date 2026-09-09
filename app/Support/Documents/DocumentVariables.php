@@ -3,8 +3,8 @@
 namespace App\Support\Documents;
 
 use App\Models\Client;
-use App\Models\CompanySetting;
 use App\Models\Contract;
+use App\Support\CompanyProfile;
 use Carbon\CarbonInterface;
 
 class DocumentVariables
@@ -25,8 +25,6 @@ class DocumentVariables
                 ['key' => 'dokumen.mulai', 'label' => 'Tanggal mulai'],
                 ['key' => 'dokumen.selesai', 'label' => 'Tanggal berakhir'],
                 ['key' => 'dokumen.durasi', 'label' => 'Lama kontrak (mis. 3 (tiga) bulan)'],
-                ['key' => 'dokumen.lingkup', 'label' => 'Ruang lingkup'],
-                ['key' => 'dokumen.pembayaran', 'label' => 'Ketentuan pembayaran'],
             ]],
             ['group' => 'Klien', 'items' => [
                 ['key' => 'klien.perusahaan', 'label' => 'Nama perusahaan klien'],
@@ -54,6 +52,7 @@ class DocumentVariables
             ]],
             ['group' => 'Nilai', 'items' => [
                 ['key' => 'nilai.subtotal', 'label' => 'Subtotal'],
+                ['key' => 'nilai.diskon', 'label' => 'Nominal diskon'],
                 ['key' => 'nilai.ppn_persen', 'label' => 'Persentase PPN'],
                 ['key' => 'nilai.ppn', 'label' => 'Nominal PPN'],
                 ['key' => 'nilai.total', 'label' => 'Nilai pekerjaan'],
@@ -68,13 +67,12 @@ class DocumentVariables
     public static function forContract(Contract $contract): array
     {
         $client = $contract->client;
-        $company = CompanySetting::current();
 
         return array_merge(
             self::documentValues($contract),
             self::clientValues($client),
-            self::companyValues($company),
-            self::partyValues($contract, $client, $company),
+            self::companyValues(),
+            self::partyValues($contract, $client),
             self::moneyValues($contract),
         );
     }
@@ -112,22 +110,20 @@ class DocumentVariables
             'dokumen.mulai' => self::date($contract->start_date),
             'dokumen.selesai' => self::date($contract->end_date),
             'dokumen.durasi' => self::duration($contract->start_date, $contract->end_date),
-            'dokumen.lingkup' => (string) ($contract->scope ?? ''),
-            'dokumen.pembayaran' => (string) ($contract->payment_terms ?? ''),
         ];
     }
 
     /**
      * @return array<string, string>
      */
-    private static function clientValues(Client $client): array
+    private static function clientValues(?Client $client): array
     {
         return [
-            'klien.perusahaan' => (string) $client->company_name,
+            'klien.perusahaan' => (string) ($client->company_name ?? ''),
             'klien.alamat' => (string) ($client->address ?? ''),
             'klien.kota' => (string) ($client->city ?? ''),
-            'klien.telepon' => (string) ($client->phone ?: $client->contact_phone ?: ''),
-            'klien.email' => (string) ($client->email ?: $client->contact_email ?: ''),
+            'klien.telepon' => (string) ($client->phone ?? ''),
+            'klien.email' => (string) ($client->email ?? ''),
             'klien.kontak' => (string) ($client->contact_name ?? ''),
             'klien.jabatan_kontak' => (string) ($client->contact_position ?? ''),
         ];
@@ -136,29 +132,29 @@ class DocumentVariables
     /**
      * @return array<string, string>
      */
-    private static function companyValues(CompanySetting $company): array
+    private static function companyValues(): array
     {
         return [
-            'perusahaan.nama' => (string) $company->name,
-            'perusahaan.alamat' => (string) ($company->address ?? ''),
-            'perusahaan.kota' => (string) ($company->city ?? ''),
-            'perusahaan.telepon' => (string) ($company->phone ?? ''),
-            'perusahaan.email' => (string) ($company->email ?? ''),
-            'perusahaan.penandatangan' => (string) ($company->signatory_name ?? ''),
-            'perusahaan.jabatan_penandatangan' => (string) ($company->signatory_position ?? ''),
+            'perusahaan.nama' => CompanyProfile::name(),
+            'perusahaan.alamat' => CompanyProfile::address(),
+            'perusahaan.kota' => CompanyProfile::city(),
+            'perusahaan.telepon' => CompanyProfile::phone(),
+            'perusahaan.email' => CompanyProfile::email(),
+            'perusahaan.penandatangan' => CompanyProfile::signatoryName(),
+            'perusahaan.jabatan_penandatangan' => CompanyProfile::signatoryPosition(),
         ];
     }
 
     /**
      * @return array<string, string>
      */
-    private static function partyValues(Contract $contract, Client $client, CompanySetting $company): array
+    private static function partyValues(Contract $contract, ?Client $client): array
     {
         return [
-            'pihak1.nama' => (string) ($contract->first_party_name ?: $client->contact_name ?: ''),
-            'pihak1.jabatan' => (string) ($contract->first_party_position ?: $client->contact_position ?: ''),
-            'pihak2.nama' => (string) ($contract->second_party_name ?: $company->signatory_name ?: ''),
-            'pihak2.jabatan' => (string) ($contract->second_party_position ?: $company->signatory_position ?: ''),
+            'pihak1.nama' => (string) ($contract->first_party_name ?: $client?->contact_name ?: ''),
+            'pihak1.jabatan' => (string) ($contract->first_party_position ?: $client?->contact_position ?: ''),
+            'pihak2.nama' => CompanyProfile::signatoryName(),
+            'pihak2.jabatan' => CompanyProfile::signatoryPosition(),
         ];
     }
 
@@ -169,6 +165,7 @@ class DocumentVariables
     {
         return [
             'nilai.subtotal' => self::rupiah($contract->subtotal),
+            'nilai.diskon' => self::rupiah($contract->discount_amount),
             'nilai.ppn_persen' => (string) (int) $contract->tax_percent.'%',
             'nilai.ppn' => self::rupiah($contract->tax_amount),
             'nilai.total' => self::rupiah($contract->value),

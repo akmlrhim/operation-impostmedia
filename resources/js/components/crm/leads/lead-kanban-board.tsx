@@ -12,14 +12,14 @@ import type { LeadCard, LeadStageColumn, Option } from '@/types/crm';
 
 export function LeadKanbanBoard({
   stages,
-  priorities,
+  temperatures,
   onAddLead,
   onEditLead,
   onAddStage,
   onEditStage,
 }: {
   stages: LeadStageColumn[];
-  priorities: Option[];
+  temperatures: Option[];
   onAddLead: (stageId: number) => void;
   onEditLead: (lead: LeadCard, stageId: number) => void;
   onAddStage: () => void;
@@ -121,7 +121,7 @@ export function LeadKanbanBoard({
           <button
             type="button"
             onClick={() => onAddLead(column.id)}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed py-8 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
+            className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed py-8 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
           >
             <Plus className="size-3.5" />
             Tambah lead
@@ -131,7 +131,7 @@ export function LeadKanbanBoard({
           <button
             type="button"
             onClick={onAddStage}
-            className="mt-8 flex h-fit w-76 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
+            className="mt-8 flex h-fit w-76 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
           >
             <Plus className="size-3.5" />
             Tambah kolom
@@ -140,7 +140,7 @@ export function LeadKanbanBoard({
         renderItem={(lead) => (
           <LeadKanbanCard
             lead={lead}
-            priorities={priorities}
+            temperatures={temperatures}
             onEdit={() => onEditLead(lead, stageIdOf(lead))}
             onConvert={() => router.post(convert(lead.id))}
             onDelete={() => removeLead(lead)}

@@ -99,10 +99,10 @@ function monthGrid(view: Date): Date[] {
 }
 
 const cellBase =
-  'flex size-8 items-center justify-center rounded-md text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40';
+  'flex size-8 cursor-pointer items-center justify-center rounded-md text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40';
 
 const navBase =
-  'flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50';
+  'flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 const shellBase =
   'flex h-9 w-full min-w-0 items-center gap-1 rounded-md border border-input bg-transparent pr-1 pl-3 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50';
@@ -363,7 +363,7 @@ export function DateField({
             type="button"
             onMouseDown={preventFocusSteal}
             onClick={() => setPanel(panel === 'days' ? 'months' : panel === 'months' ? 'years' : 'days')}
-            className="rounded-md px-2 py-1 text-sm font-medium transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm font-medium transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {title}
           </button>
@@ -452,7 +452,7 @@ export function DateField({
                   setPanel('days');
                 }}
                 className={cn(
-                  'rounded-md px-2 py-2 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  'cursor-pointer rounded-md px-2 py-2 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
                   index === view.getMonth() && 'bg-primary text-primary-foreground hover:bg-primary',
                 )}
               >
@@ -475,7 +475,7 @@ export function DateField({
                     setPanel('months');
                   }}
                   className={cn(
-                    'rounded-md px-2 py-2 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                    'cursor-pointer rounded-md px-2 py-2 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
                     year === view.getFullYear() &&
                       'bg-primary text-primary-foreground hover:bg-primary',
                   )}
@@ -496,7 +496,7 @@ export function DateField({
               commit(todayIso);
               setOpen(false);
             }}
-            className="rounded-md px-2 py-1 text-xs font-medium transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40"
+            className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40"
           >
             Hari ini
           </button>
@@ -509,7 +509,7 @@ export function DateField({
                 onChange('');
                 setOpen(false);
               }}
-              className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="cursor-pointer rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Kosongkan
             </button>

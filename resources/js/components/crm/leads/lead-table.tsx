@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react';
-import { ArrowRightLeft, Pencil, Trash2 } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import { ArrowRightLeft, ExternalLink, Eye, Pencil, Trash2 } from 'lucide-react';
 import { BulkActionsBar } from '@/components/crm/bulk-actions-bar';
 import { useConfirm } from '@/components/crm/confirm-dialog';
 import { RowActions } from '@/components/crm/row-actions';
@@ -17,23 +17,39 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, rupiah } from '@/lib/format';
-import { convert, destroy, destroyBulk, exportMethod as exportLeads } from '@/routes/leads';
+import { convert, destroy, destroyBulk, exportMethod as exportLeads, show } from '@/routes/leads';
 import type { LeadCard, Option } from '@/types/crm';
 
 type LeadRow = LeadCard & { stage: { id: number; name: string; color: string } | null };
 
+const COLUMN_COUNT = 21;
+
+function Truncated({ value, width }: { value: string | null; width: string }) {
+  if (!value) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  return (
+    <span className={`block truncate ${width}`} title={value}>
+      {value}
+    </span>
+  );
+}
+
 export function LeadTable({
   leads,
-  priorities,
   statuses,
+  sources,
+  temperatures,
   sort,
   direction,
   onSort,
   onEdit,
 }: {
   leads: LeadRow[];
-  priorities: Option[];
   statuses: Option[];
+  sources: Option[];
+  temperatures: Option[];
   sort: string;
   direction: 'asc' | 'desc';
   onSort: (column: string) => void;
@@ -61,7 +77,7 @@ export function LeadTable({
       />
 
       <Card className="overflow-hidden rounded-sm py-0">
-        <Table className="min-w-3xl">
+        <Table className="min-w-[2200px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
@@ -74,44 +90,76 @@ export function LeadTable({
                 />
               </TableHead>
               <SortableTableHead
-                label="Perusahaan"
+                label="Date In"
+                active={sort === 'date_in'}
+                direction={direction}
+                onClick={() => onSort('date_in')}
+              />
+              <SortableTableHead
+                label="Client Name"
                 active={sort === 'company_name'}
                 direction={direction}
                 onClick={() => onSort('company_name')}
               />
               <SortableTableHead
-                label="Kontak"
+                label="Industry"
+                active={sort === 'industry'}
+                direction={direction}
+                onClick={() => onSort('industry')}
+              />
+              <SortableTableHead
+                label="Contact Person"
                 active={sort === 'contact_name'}
                 direction={direction}
                 onClick={() => onSort('contact_name')}
               />
+              <TableHead>Contact Info</TableHead>
               <SortableTableHead
-                label="Stage"
-                active={sort === 'stage'}
+                label="Asal Daerah"
+                active={sort === 'region'}
                 direction={direction}
-                onClick={() => onSort('stage')}
+                onClick={() => onSort('region')}
               />
               <SortableTableHead
-                label="Prioritas"
-                active={sort === 'priority'}
+                label="Source"
+                active={sort === 'source'}
                 direction={direction}
-                onClick={() => onSort('priority')}
+                onClick={() => onSort('source')}
               />
+              <TableHead>PIC</TableHead>
+              <TableHead>PIC Impost</TableHead>
+              <TableHead>Service Needed</TableHead>
+              <TableHead>Invoice Terakhir</TableHead>
               <SortableTableHead
-                label="Estimasi Nilai"
+                label="Estimated Value (Rp)"
                 active={sort === 'estimated_value'}
                 direction={direction}
                 onClick={() => onSort('estimated_value')}
                 className="text-right"
               />
               <SortableTableHead
-                label="Target Closing"
-                active={sort === 'expected_close_date'}
+                label="Last Contact Date"
+                active={sort === 'last_contact_date'}
                 direction={direction}
-                onClick={() => onSort('expected_close_date')}
+                onClick={() => onSort('last_contact_date')}
               />
               <SortableTableHead
-                label="Status"
+                label="Next Action Date"
+                active={sort === 'next_action_date'}
+                direction={direction}
+                onClick={() => onSort('next_action_date')}
+              />
+              <TableHead>Next Action</TableHead>
+              <SortableTableHead
+                label="Temperature"
+                active={sort === 'temperature'}
+                direction={direction}
+                onClick={() => onSort('temperature')}
+              />
+              <TableHead>Notes</TableHead>
+              <TableHead>Link Folder</TableHead>
+              <SortableTableHead
+                label="Deal Status"
                 active={sort === 'status'}
                 direction={direction}
                 onClick={() => onSort('status')}
@@ -122,7 +170,10 @@ export function LeadTable({
           <TableBody>
             {leads.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={COLUMN_COUNT}
+                  className="py-10 text-center text-muted-foreground"
+                >
                   Belum ada lead yang cocok.
                 </TableCell>
               </TableRow>
@@ -137,41 +188,106 @@ export function LeadTable({
                     aria-label={`Pilih ${lead.company_name}`}
                   />
                 </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {lead.date_in ? formatDate(lead.date_in) : '-'}
+                </TableCell>
                 <TableCell>
-                  <button
-                    type="button"
-                    onClick={() => onEdit(lead)}
-                    className="font-medium hover:underline"
+                  <Link
+                    href={show(lead.id)}
+                    className="block max-w-56 truncate font-medium hover:underline"
+                    title={lead.company_name}
                   >
                     {lead.company_name}
-                  </button>
+                  </Link>
                 </TableCell>
                 <TableCell>
-                  <div>{lead.contact_name}</div>
-                  {(lead.phone || lead.email) && (
-                    <div className="text-xs text-muted-foreground">{lead.phone || lead.email}</div>
+                  <Truncated value={lead.industry} width="max-w-40" />
+                </TableCell>
+                <TableCell>
+                  <Truncated value={lead.contact_name} width="max-w-40" />
+                </TableCell>
+                <TableCell>
+                  {lead.phone || lead.email ? (
+                    <div className="max-w-52">
+                      {lead.phone && <div className="truncate">{lead.phone}</div>}
+                      {lead.email && (
+                        <div className="truncate text-muted-foreground" title={lead.email}>
+                          {lead.email}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {lead.stage && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        aria-hidden
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: lead.stage.color }}
-                      />
-                      <span className="truncate">{lead.stage.name}</span>
+                  <Truncated value={lead.region} width="max-w-36" />
+                </TableCell>
+                <TableCell>
+                  {lead.source ? (
+                    <StatusBadge value={lead.source} options={sources} />
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Truncated value={lead.pic} width="max-w-36" />
+                </TableCell>
+                <TableCell>
+                  <Truncated value={lead.pic_impost} width="max-w-36" />
+                </TableCell>
+                <TableCell>
+                  <Truncated
+                    value={
+                      lead.service_packages.length === 0
+                        ? null
+                        : lead.service_packages.map((pkg) => pkg.name).join(', ')
+                    }
+                    width="max-w-48"
+                  />
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {lead.last_invoice ? (
+                    <span title={lead.last_invoice.issue_date ?? undefined}>
+                      {lead.last_invoice.number}
                     </span>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  <StatusBadge value={lead.priority} options={priorities} />
-                </TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell className="text-right font-medium whitespace-nowrap">
                   {rupiah(lead.estimated_value)}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {lead.expected_close_date ? formatDate(lead.expected_close_date) : '-'}
+                <TableCell className="whitespace-nowrap">
+                  {lead.last_contact_date ? formatDate(lead.last_contact_date) : '-'}
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {lead.next_action_date ? formatDate(lead.next_action_date) : '-'}
+                </TableCell>
+                <TableCell>
+                  <Truncated value={lead.next_action} width="max-w-48" />
+                </TableCell>
+                <TableCell>
+                  <StatusBadge value={lead.temperature} options={temperatures} />
+                </TableCell>
+                <TableCell>
+                  <Truncated value={lead.notes} width="max-w-64" />
+                </TableCell>
+                <TableCell>
+                  {lead.folder_url ? (
+                    <a
+                      href={lead.folder_url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1 hover:underline"
+                      title={lead.folder_url}
+                    >
+                      <ExternalLink aria-hidden className="size-3.5 shrink-0" />
+                      Folder
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <StatusBadge value={lead.status} options={statuses} />
@@ -180,6 +296,11 @@ export function LeadTable({
                   <RowActions
                     label={lead.company_name}
                     actions={[
+                      {
+                        label: 'Buka detail',
+                        icon: Eye,
+                        onSelect: () => router.visit(show(lead.id)),
+                      },
                       { label: 'Ubah lead', icon: Pencil, onSelect: () => onEdit(lead) },
                       ...(lead.converted_client_id === null
                         ? [

@@ -29,7 +29,7 @@ function niceCeil(value: number): number {
   return magnitude * (steps.find((step) => value <= step * magnitude) ?? 10);
 }
 
-export function TrendChart({ data }: { data: TrendPoint[] }) {
+export function TrendChart({ data, period }: { data: TrendPoint[]; period: string }) {
   const [asTable, setAsTable] = useState(false);
   const [active, setActive] = useState<number | null>(null);
 
@@ -45,7 +45,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
         <div className="mr-auto space-y-1">
           <CardTitle className="text-base">Tagihan vs uang masuk</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Enam bulan terakhir. Jarak antara keduanya adalah piutang yang menumpuk.
+            Enam bulan sampai {period}. Jarak antara keduanya adalah piutang yang menumpuk.
           </p>
         </div>
 
@@ -75,13 +75,19 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th scope="col" className="py-2 font-medium">
+                  <th scope="col" className="py-2 text-xs font-semibold tracking-wide uppercase">
                     Bulan
                   </th>
-                  <th scope="col" className="py-2 text-right font-medium">
+                  <th
+                    scope="col"
+                    className="py-2 text-right text-xs font-semibold tracking-wide uppercase"
+                  >
                     Tagihan terbit
                   </th>
-                  <th scope="col" className="py-2 text-right font-medium">
+                  <th
+                    scope="col"
+                    className="py-2 text-right text-xs font-semibold tracking-wide uppercase"
+                  >
                     Uang masuk
                   </th>
                 </tr>

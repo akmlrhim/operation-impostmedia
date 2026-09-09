@@ -13,15 +13,11 @@ export function useRealtime(topics: string[], only: string[] = []): void {
   const onlyKey = only.join('|');
 
   useEffect(() => {
-    const echo = getEcho();
-
-    if (!echo) {
-      return;
-    }
-
     const watched = topicKey.split('|');
     const props = onlyKey ? onlyKey.split('|') : undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let stop: (() => void) | undefined;
+    let cancelled = false;
 
     function handle(payload: CrmChanged) {
       if (!watched.includes(payload.resource)) {
@@ -34,11 +30,20 @@ export function useRealtime(topics: string[], only: string[] = []): void {
       }, 300);
     }
 
-    const channel = echo.private('crm').listen('.crm.changed', handle);
+    void getEcho().then((echo) => {
+      if (echo === null || cancelled) {
+        return;
+      }
+
+      const channel = echo.private('crm').listen('.crm.changed', handle);
+
+      stop = () => channel.stopListening('.crm.changed', handle);
+    });
 
     return () => {
+      cancelled = true;
       clearTimeout(timer);
-      channel.stopListening('.crm.changed', handle);
+      stop?.();
     };
   }, [topicKey, onlyKey]);
 }

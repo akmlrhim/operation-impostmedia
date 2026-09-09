@@ -23,3 +23,44 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Kompresi teks -- HTML/JSON Inertia, JS, CSS, SVG.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml application/rss+xml
+    AddOutputFilterByType DEFLATE image/svg+xml application/vnd.ms-fontobject font/ttf font/otf
+</IfModule>
+
+# Aset build Vite sudah ber-hash, jadi aman dicache selamanya.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|mjs|css|woff2|woff|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+    </FilesMatch>
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header unset X-Powered-By
+    Header unset Server
+
+    # Berkas statis (aset build, logo, favicon) dilayani Apache tanpa lewat PHP,
+    # jadi header noindex dari middleware tidak sampai ke sini.
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex"
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
+# Jangan pernah sajikan berkas tersembunyi atau cadangan.
+<FilesMatch "^\.|\.(env|log|sql|bak|swp|ini|json|lock|md|yml|yaml)$">
+    Require all denied
+</FilesMatch>

@@ -194,6 +194,7 @@ class MouTemplate
                     'type' => BlockSchema::ITEMS_TABLE,
                     'columns' => ['no', 'name', 'quantity', 'unit_price', 'amount'],
                     'showSubtotal' => true,
+                    'showDiscount' => true,
                     'showTax' => true,
                     'showTotal' => true,
                     'spaceAfter' => 8,
@@ -203,7 +204,6 @@ class MouTemplate
                     align: 'left',
                     spaceAfter: 8,
                 ),
-                self::paragraph('<p>{{ dokumen.pembayaran }}</p>', spaceAfter: 10),
                 self::list('lower-alpha', ['<strong>Syarat &amp; Ketentuan</strong>'], start: 2),
                 self::list('disc', [
                     'Masa kontrak berlangsung selama {{ dokumen.durasi }} sejak tanggal penandatanganan Perjanjian.',
@@ -490,7 +490,7 @@ class MouTemplate
                         'caption' => "{{ pihak1.jabatan }}\n{{ klien.perusahaan }}",
                         'name' => '{{ pihak1.nama }}',
                         'stamp' => true,
-                        'signature' => false,
+                        'signature' => 'client_signature',
                     ],
                     [
                         'title' => 'THE COMPANY',

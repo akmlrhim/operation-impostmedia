@@ -21,11 +21,8 @@ return new class extends Migration
 
             $table->string('contact_name')->nullable();
             $table->string('contact_position')->nullable();
-            $table->string('contact_email')->nullable();
-            $table->string('contact_phone')->nullable();
 
             $table->string('status')->default('active');
-            $table->foreignId('account_manager_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

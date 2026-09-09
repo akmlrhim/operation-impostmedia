@@ -5,10 +5,17 @@ namespace App\Actions\Crm;
 use App\Exceptions\AiUnavailable;
 use App\Models\ServicePackage;
 use App\Support\Ai\Groq;
+use Illuminate\Support\Facades\Cache;
 
 class WriteScopePoints
 {
     private const MAX_POINTS = 8;
+
+    /**
+     * Cukup untuk delapan poin pendek beserta token berpikirnya. Terlalu ketat
+     * justru bikin JSON-nya terpotong dan permintaannya terbuang percuma.
+     */
+    private const MAX_TOKENS = 800;
 
     private const SYSTEM = <<<'TEXT'
         Kamu penyusun dokumen MoU di sebuah agensi digital di Indonesia.
@@ -27,7 +34,7 @@ class WriteScopePoints
     public function __construct(private readonly Groq $groq) {}
 
     /**
-     * @param  string  $work  Uraian baris, mis. "Social Media Management — Paket Basic"
+     * @param  string  $work  Uraian baris, mis. "Social Media Management - Paket Basic"
      * @param  ServicePackage|null  $package  Paket katalog asal baris, bila ada
      * @return list<string>
      *
@@ -39,9 +46,19 @@ class WriteScopePoints
         ?string $clientName = null,
         ?string $contractTitle = null,
     ): array {
-        $answer = $this->groq->json(self::SYSTEM, $this->prompt($work, $package, $clientName, $contractTitle));
+        $prompt = $this->prompt($work, $package, $clientName, $contractTitle);
+        $model = Groq::lightModel();
 
-        return $this->points($answer);
+        return Cache::remember(
+            'ai:scope:'.hash('xxh128', $model.'|'.self::SYSTEM.'|'.$prompt),
+            now()->addDays(max(1, (int) config('services.groq.cache_days'))),
+            fn (): array => $this->points($this->groq->json(
+                self::SYSTEM,
+                $prompt,
+                maxTokens: self::MAX_TOKENS,
+                model: $model,
+            )),
+        );
     }
 
     private function prompt(

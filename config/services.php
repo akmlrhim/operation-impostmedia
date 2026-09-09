@@ -36,6 +36,31 @@ return [
     'groq' => [
         'key' => env('GROQ_API_KEY'),
         'model' => env('GROQ_MODEL', 'openai/gpt-oss-120b'),
+
+        /*
+        | Model kedua untuk tugas ringan (rincian per baris pekerjaan). Kuota
+        | Groq dihitung per model, jadi memisahkannya memberi jatah sendiri.
+        */
+        'light_model' => env('GROQ_LIGHT_MODEL', env('GROQ_MODEL', 'openai/gpt-oss-120b')),
+
+        /*
+        | Model gpt-oss berpikir dulu sebelum menjawab, dan token berpikir itu
+        | ikut ditagih. Hanya 'low', 'medium', atau 'high' yang diterima Groq.
+        */
+        'reasoning_effort' => env('GROQ_REASONING_EFFORT', 'low'),
+
+        /*
+        | Tidak semua model menerima reasoning_effort; groq/compound menolaknya
+        | dengan 400. Potongan nama di sini yang menentukan kapan parameter itu
+        | ikut dikirim, jadi ganti model tidak perlu ganti kode.
+        */
+        'reasoning_models' => array_filter(
+            explode(',', (string) env('GROQ_REASONING_MODELS', 'gpt-oss')),
+        ),
+
+        'max_tokens' => (int) env('GROQ_MAX_TOKENS', 1500),
+
+        'cache_days' => (int) env('GROQ_CACHE_DAYS', 30),
     ],
 
     'turnstile' => [

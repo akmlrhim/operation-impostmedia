@@ -17,14 +17,13 @@ import { useRealtime } from '@/hooks/use-realtime';
 import { destroy, index, show } from '@/routes/clients';
 import { create as createContract } from '@/routes/contracts';
 import { create as createInvoice } from '@/routes/invoices';
-import type { Client, Contract, Invoice, Option, UserRef } from '@/types/crm';
+import type { Client, Contract, Invoice, Option } from '@/types/crm';
 
 type Props = {
   client: Client;
   contracts: Contract[];
   invoices: Invoice[];
   statuses: Option[];
-  users: UserRef[];
 };
 
 function Detail({
@@ -44,7 +43,7 @@ function Detail({
   );
 }
 
-export default function ClientShow({ client, contracts, invoices, statuses, users }: Props) {
+export default function ClientShow({ client, contracts, invoices, statuses }: Props) {
   useRealtime(
     ['clients', 'contracts', 'invoices', 'attachments'],
     ['client', 'contracts', 'invoices'],
@@ -122,11 +121,6 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
                 </Detail>
                 <Detail label="Nama PIC">{client.contact_name}</Detail>
                 <Detail label="Jabatan PIC">{client.contact_position}</Detail>
-                <Detail label="Email PIC">{client.contact_email}</Detail>
-                <Detail label="Telepon PIC">{client.contact_phone}</Detail>
-                <Detail label="Account Manager" className="sm:col-span-2">
-                  {client.account_manager?.name}
-                </Detail>
                 <Detail label="Catatan" className="sm:col-span-2">
                   {client.notes && <span className="whitespace-pre-line">{client.notes}</span>}
                 </Detail>
@@ -144,12 +138,7 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
       </div>
 
       {editModal && (
-        <ClientFormModal
-          client={client}
-          statuses={statuses}
-          users={users}
-          onClose={() => setEditModal(false)}
-        />
+        <ClientFormModal client={client} statuses={statuses} onClose={() => setEditModal(false)} />
       )}
 
       {confirmDialog}

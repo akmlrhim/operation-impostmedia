@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('contracts', function (Blueprint $table) {
-            $table->boolean('ai_requires_visit')->nullable()->after('ai_clauses');
+        Schema::table('contracts', function (Blueprint $table): void {
+            $table->string('signature_path')->nullable()->after('file_path');
         });
     }
 
     public function down(): void
     {
-        Schema::table('contracts', function (Blueprint $table) {
-            $table->dropColumn('ai_requires_visit');
+        Schema::table('contracts', function (Blueprint $table): void {
+            $table->dropColumn('signature_path');
         });
     }
 };

@@ -16,13 +16,4 @@ enum ClientStatus: string implements HasLabel
             self::Churned => 'Berhenti',
         };
     }
-
-    public function color(): string
-    {
-        return match ($this) {
-            self::Active => 'green',
-            self::Inactive => 'slate',
-            self::Churned => 'red',
-        };
-    }
 }

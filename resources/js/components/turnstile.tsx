@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 type RenderOptions = {
   sitekey: string;
   theme?: 'light' | 'dark' | 'auto';
+  retry?: 'auto' | 'never';
+  'refresh-expired'?: 'auto' | 'manual' | 'never';
   callback?: (token: string) => void;
   'expired-callback'?: () => void;
   'error-callback'?: () => void;
@@ -12,6 +14,7 @@ declare global {
   interface Window {
     turnstile?: {
       render: (element: HTMLElement, options: RenderOptions) => string;
+      reset: (widgetId: string) => void;
       remove: (widgetId: string) => void;
     };
   }
@@ -69,12 +72,22 @@ export default function Turnstile({ siteKey, onToken, onFailedToLoad }: Props) {
           return;
         }
 
+        function renew() {
+          handlers.current.onToken(null);
+
+          if (widgetId !== undefined) {
+            window.turnstile?.reset(widgetId);
+          }
+        }
+
         widgetId = window.turnstile.render(container.current, {
           sitekey: siteKey,
           theme: 'auto',
+          retry: 'auto',
+          'refresh-expired': 'auto',
           callback: (token) => handlers.current.onToken(token),
-          'expired-callback': () => handlers.current.onToken(null),
-          'error-callback': () => handlers.current.onToken(null),
+          'expired-callback': renew,
+          'error-callback': renew,
         });
       })
       .catch(() => {

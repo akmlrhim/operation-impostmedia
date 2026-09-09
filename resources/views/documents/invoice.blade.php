@@ -13,7 +13,7 @@
      * mengisinya dari invoice_notes, jadi invoice lama yang notes-nya kosong tetap
      * ikut mencetak catatan standar perusahaan.
      */
-    $catatan = filled($invoice->notes) ? $invoice->notes : $company->invoice_notes;
+    $catatan = filled($invoice->notes) ? $invoice->notes : $profile['invoice_notes'];
 
     /** Setiap baris deskripsi jadi satu poin -- ditulis pengguna satu poin per baris. */
     $bullets = fn (?string $text) => collect(preg_split('/\r\n|\r|\n/', (string) $text))
@@ -80,7 +80,6 @@
         .bill-to { margin-top: 16px; }
         .bill-to .label { color: #737373; }
         .bill-to .name { margin-top: 6px; font-weight: bold; }
-        .bill-to .address { margin-top: 4px; color: #737373; line-height: {{ $lh(12.7) }}; }
 
         /* Rincian item. */
         table.items { width: 100%; margin-top: 30px; }
@@ -124,21 +123,18 @@
     <table class="masthead">
         <tr>
             <td class="col-left">
-                @if ($logo = $company->logoData())
+                @if ($logo = \App\Support\CompanyProfile::logoData())
                     <img class="logo" src="{{ $logo }}" alt="">
                 @endif
 
                 <div class="company">
-                    <div class="name">{{ $company->name }}</div>
-                    <div class="address">{{ $company->address }}</div>
+                    <div class="name">{{ $profile['name'] }}</div>
+                    <div class="address">{{ $profile['address'] }}</div>
                 </div>
 
                 <div class="bill-to">
                     <div class="label">Bill To:</div>
                     <div class="name">{{ $bill['company_name'] ?? $invoice->client->company_name }}</div>
-                    <div class="address">
-                        {{ $bill['address'] ?? $invoice->client->address }}@if ($bill['contact_name'] ?? null)<br>u.p. {{ $bill['contact_name'] }}@endif
-                    </div>
                 </div>
             </td>
 
@@ -234,10 +230,10 @@
         </div>
     @endif
 
-    @if (filled($company->terms))
+    @if (filled($profile['terms']))
         <div class="terms">
             <div class="label">Terms:</div>
-            <div class="block free-text">{{ $company->terms }}</div>
+            <div class="block free-text">{{ $profile['terms'] }}</div>
         </div>
     @endif
 </body>

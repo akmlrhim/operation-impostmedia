@@ -5,10 +5,10 @@ namespace App\Actions\Crm;
 use App\Enums\DocumentType;
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceType;
-use App\Models\CompanySetting;
 use App\Models\Contract;
 use App\Models\DocumentSequence;
 use App\Models\Invoice;
+use App\Support\CompanyProfile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -16,14 +16,13 @@ class CreateInvoiceFromContract
 {
     public function handle(Contract $contract, ?Carbon $periodStart = null): Invoice
     {
-        $company = CompanySetting::current();
         $recurring = $contract->billing_cycle->isRecurring();
         $periodStart ??= $contract->next_invoice_date ?? Carbon::now()->startOfMonth();
         $interval = $contract->billing_cycle->monthInterval();
 
         $issueDate = Carbon::now();
 
-        return DB::transaction(function () use ($contract, $company, $recurring, $periodStart, $interval, $issueDate): Invoice {
+        return DB::transaction(function () use ($contract, $recurring, $periodStart, $interval, $issueDate): Invoice {
             $invoice = Invoice::create([
                 'number' => DocumentSequence::next(
                     DocumentType::Invoice,
@@ -39,10 +38,11 @@ class CreateInvoiceFromContract
                 'period_end' => $recurring && $interval !== null
                     ? $periodStart->copy()->addMonths($interval)->subDay()
                     : null,
+                'discount_amount' => $recurring ? 0 : $contract->discount_amount,
                 'tax_percent' => $contract->tax_percent,
                 'status' => InvoiceStatus::Draft,
-                'billing_snapshot' => $contract->client->billingSnapshot(),
-                'notes' => $company->invoice_notes,
+                'billing_snapshot' => $contract->client?->billingSnapshot(),
+                'notes' => CompanyProfile::invoiceNotes(),
                 'created_by' => auth()->id(),
             ]);
 

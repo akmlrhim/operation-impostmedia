@@ -29,20 +29,14 @@ enum ContractStatus: string implements HasLabel
         };
     }
 
-    public function color(): string
-    {
-        return match ($this) {
-            self::Draft, self::Review => 'slate',
-            self::Sent => 'amber',
-            self::Signed, self::Active => 'green',
-            self::Completed => 'blue',
-            self::Expired, self::Terminated, self::Cancelled => 'red',
-        };
-    }
-
     public function canBeInvoiced(): bool
     {
         return in_array($this, [self::Signed, self::Active, self::Completed], true);
+    }
+
+    public function canBeSigned(): bool
+    {
+        return in_array($this, [self::Draft, self::Review, self::Sent], true);
     }
 
     public function isEditable(): bool

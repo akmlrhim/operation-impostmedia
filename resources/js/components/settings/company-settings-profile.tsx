@@ -1,79 +1,49 @@
-import type { InertiaForm } from '@inertiajs/react';
-import { Field, FormGrid } from '@/components/crm/field';
 import Heading from '@/components/heading';
-import type { CompanyFormData } from '@/components/settings/company-settings-types';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import type { CompanyIdentity } from '@/types/crm';
 
-export function CompanySettingsProfile({ form }: { form: InertiaForm<CompanyFormData> }) {
+export function CompanySettingsProfile({
+  profile,
+  logoUrl,
+}: {
+  profile: CompanyIdentity;
+  logoUrl: string | null;
+}) {
+  const rows = [
+    { label: 'Nama perusahaan', value: profile.name },
+    { label: 'Alamat', value: profile.address },
+    { label: 'Kota', value: profile.city },
+    { label: 'Telepon', value: profile.phone },
+    { label: 'Email', value: profile.email },
+    { label: 'Penanda tangan', value: profile.signatory_name },
+    { label: 'Jabatan penanda tangan', value: profile.signatory_position },
+  ];
+
   return (
     <>
       <Heading
         variant="small"
-        title="Profil perusahaan"
-        description="Dipakai sebagai kop surat MoU dan invoice"
+        title="Identitas perusahaan"
+        description="Kop surat MoU dan invoice, sekaligus PIHAK KEDUA di setiap MoU"
       />
 
-      <FormGrid>
-        <Field
-          label="Nama perusahaan"
-          htmlFor="name"
-          required
-          className="sm:col-span-2"
-          error={form.errors.name}
-        >
-          <Input
-            id="name"
-            value={form.data.name}
-            onChange={(e) => form.setData('name', e.target.value)}
-            required
-            placeholder="Masukkan nama perusahaan"
+      <div className="space-y-4 rounded-lg border p-4">
+        {logoUrl !== null && (
+          <img
+            src={logoUrl}
+            alt="Logo perusahaan"
+            className="size-20 rounded-md border bg-white object-contain p-1"
           />
-        </Field>
+        )}
 
-        <Field label="Kota" htmlFor="city" error={form.errors.city}>
-          <Input
-            id="city"
-            value={form.data.city}
-            onChange={(e) => form.setData('city', e.target.value)}
-            placeholder="Masukkan kota"
-          />
-        </Field>
-
-        <Field label="Email" htmlFor="email" error={form.errors.email}>
-          <Input
-            id="email"
-            type="email"
-            value={form.data.email}
-            onChange={(e) => form.setData('email', e.target.value)}
-            placeholder="Masukkan email"
-          />
-        </Field>
-
-        <Field label="Telepon" htmlFor="phone" error={form.errors.phone}>
-          <Input
-            id="phone"
-            value={form.data.phone}
-            onChange={(e) => form.setData('phone', e.target.value)}
-            placeholder="Masukkan nomor telepon"
-          />
-        </Field>
-
-        <Field
-          label="Alamat"
-          htmlFor="address"
-          className="sm:col-span-2"
-          error={form.errors.address}
-        >
-          <Textarea
-            id="address"
-            rows={2}
-            value={form.data.address}
-            onChange={(e) => form.setData('address', e.target.value)}
-            placeholder="Masukkan alamat"
-          />
-        </Field>
-      </FormGrid>
+        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+          {rows.map((row) => (
+            <div key={row.label} className="space-y-0.5">
+              <dt className="text-xs text-muted-foreground">{row.label}</dt>
+              <dd className="font-medium">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </>
   );
 }

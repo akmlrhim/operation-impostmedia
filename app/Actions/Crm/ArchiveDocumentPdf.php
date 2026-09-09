@@ -5,6 +5,7 @@ namespace App\Actions\Crm;
 use App\Models\CompanySetting;
 use App\Models\Contract;
 use App\Models\Invoice;
+use App\Support\CompanyProfile;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -12,16 +13,15 @@ use Illuminate\Support\Str;
 
 class ArchiveDocumentPdf
 {
-    public const DISK = 'public';
+    public const DISK = 'local';
 
     public function forContract(Contract $contract, RenderContractDocument $renderer): string
     {
-        $body = $contract->body ?: $renderer->handle($contract, persist: false);
+        $body = $contract->renderedBody() ?: $renderer->handle($contract, persist: false);
 
         return $this->store($contract, 'mou', $contract->number, view('documents.print', [
             'title' => $contract->number,
             'body' => $body,
-            'printable' => false,
         ])->render());
     }
 
@@ -30,6 +30,7 @@ class ArchiveDocumentPdf
         return $this->store($invoice, 'invoice', $invoice->number, view('documents.invoice', [
             'invoice' => $invoice->load(['items', 'client', 'payments']),
             'company' => CompanySetting::current(),
+            'profile' => CompanyProfile::all(),
         ])->render());
     }
 

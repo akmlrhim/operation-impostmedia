@@ -119,7 +119,7 @@ export function InvoiceFormDetails({
               >
                 Terbitkan invoice
               </Link>{' '}
-              di MoU itu — invoice yang dibuat di sini tidak menggeser jadwal penagihannya, jadi
+              di MoU itu. Invoice yang dibuat di sini tidak menggeser jadwal penagihannya, jadi
               periode yang sama bisa tertagih dua kali.
             </span>
           </p>

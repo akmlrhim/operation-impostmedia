@@ -24,8 +24,9 @@ export function LeadTableTab({
   leads,
   filters,
   stageOptions,
-  priorities,
   statuses,
+  sources,
+  temperatures,
   onFilterStage,
   onFilterStatus,
   onSort,
@@ -34,8 +35,9 @@ export function LeadTableTab({
   leads: Paginated<LeadRow>;
   filters: TableFilters;
   stageOptions: StageOption[];
-  priorities: Option[];
   statuses: Option[];
+  sources: Option[];
+  temperatures: Option[];
   onFilterStage: (stageId: number | null) => void;
   onFilterStatus: (status: string) => void;
   onSort: (column: string) => void;
@@ -81,8 +83,9 @@ export function LeadTableTab({
 
       <LeadTable
         leads={leads.data}
-        priorities={priorities}
         statuses={statuses}
+        sources={sources}
+        temperatures={temperatures}
         sort={filters.sort}
         direction={filters.direction}
         onSort={onSort}

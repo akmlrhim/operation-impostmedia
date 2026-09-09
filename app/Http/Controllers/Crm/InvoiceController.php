@@ -148,7 +148,7 @@ class InvoiceController extends Controller
         SyncInvoiceStatus $sync,
         ArchiveDocumentPdf $archiver,
     ): RedirectResponse {
-        $invoice->update(['status' => InvoiceStatus::Sent, 'sent_at' => now()]);
+        $invoice->update(['status' => InvoiceStatus::Sent]);
         $sync->handle($invoice);
 
         $archiver->forInvoice($invoice->refresh());
@@ -168,6 +168,31 @@ class InvoiceController extends Controller
         );
     }
 
+    public function settle(Invoice $invoice, SyncInvoiceStatus $sync): RedirectResponse
+    {
+        if (! $invoice->status->isOutstanding() || (float) $invoice->balance_due <= 0) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Hanya invoice terkirim yang masih punya sisa tagihan bisa dilunaskan.',
+            ]);
+
+            return back();
+        }
+
+        $invoice->payments()->create([
+            'amount' => $invoice->balance_due,
+            'paid_at' => now()->toDateString(),
+            'method' => PaymentMethod::Transfer,
+            'recorded_by' => auth()->id(),
+        ]);
+
+        $sync->handle($invoice);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice ditandai lunas.']);
+
+        return back();
+    }
+
     public function void(Invoice $invoice): RedirectResponse
     {
         $invoice->update(['status' => InvoiceStatus::Void]);
@@ -179,15 +204,6 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice): RedirectResponse
     {
-        if ($invoice->payments()->exists()) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => 'Invoice tidak bisa dihapus karena sudah ada pembayaran tercatat.',
-            ]);
-
-            return back();
-        }
-
         $invoice->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice dihapus.']);
@@ -197,23 +213,13 @@ class InvoiceController extends Controller
 
     public function destroyBulk(BulkIdsRequest $request): RedirectResponse
     {
-        $invoices = Invoice::query()->whereIn('id', $request->ids())->withCount('payments')->get();
-
-        $deleted = 0;
-        $skipped = 0;
+        $invoices = Invoice::query()->whereIn('id', $request->ids())->get();
 
         foreach ($invoices as $invoice) {
-            if ($invoice->payments_count > 0) {
-                $skipped++;
-
-                continue;
-            }
-
             $invoice->delete();
-            $deleted++;
         }
 
-        Inertia::flash('toast', BulkDeleteSummary::toast($deleted, $skipped, 'invoice', 'sudah ada pembayaran'));
+        Inertia::flash('toast', BulkDeleteSummary::toast($invoices->count(), 0, 'invoice', ''));
 
         return ListRedirect::to('invoices.index');
     }
@@ -231,7 +237,7 @@ class InvoiceController extends Controller
             ['Nomor', 'Klien', 'Terbit', 'Jatuh Tempo', 'Total', 'Sisa', 'Status'],
             $invoices->map(fn (Invoice $invoice): array => [
                 $invoice->number,
-                $invoice->client->company_name,
+                $invoice->client->company_name ?? 'Tanpa klien',
                 $invoice->issue_date->format('Y-m-d'),
                 $invoice->due_date->format('Y-m-d'),
                 (string) $invoice->total,

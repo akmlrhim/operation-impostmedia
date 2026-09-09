@@ -73,7 +73,7 @@ export function InvoiceForm({
     discount_amount: invoice?.discount_amount ?? '0',
     tax_percent: invoice?.tax_percent ?? '0',
     status: invoice?.status ?? 'draft',
-    notes: invoice?.notes ?? company.invoice_notes ?? '',
+    notes: invoice?.notes ?? company.invoice_notes,
     items: (invoice?.items?.length ? invoice.items : [{ ...emptyLineItem }]) as LineItem[],
   });
 

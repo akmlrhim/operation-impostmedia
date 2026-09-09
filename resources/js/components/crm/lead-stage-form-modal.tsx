@@ -113,7 +113,7 @@ export function LeadStageFormModal({ stage, stageTypes, onClose }: Props) {
                   aria-label={`Pakai warna ${color}`}
                   onClick={() => form.setData('color', color)}
                   style={{ backgroundColor: color }}
-                  className="size-6 rounded-md border transition-transform hover:scale-110"
+                  className="size-6 cursor-pointer rounded-md border transition-transform hover:scale-110"
                 />
               ))}
             </div>

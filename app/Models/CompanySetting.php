@@ -2,44 +2,42 @@
 
 namespace App\Models;
 
+use App\Support\CompanyProfile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * @property string $name
- * @property string|null $logo_path
  * @property string|null $signature_path
  */
 class CompanySetting extends Model
 {
     protected $guarded = ['id'];
 
-    public const DISK = 'public';
+    public const DISK = 'local';
 
     public static function current(): self
     {
-        return static::query()->firstOrCreate([], ['name' => config('app.name')]);
-    }
-
-    public function logoUrl(): ?string
-    {
-        return $this->fileUrl($this->logo_path);
+        return static::query()->firstOrCreate([]);
     }
 
     public function signatureUrl(): ?string
     {
-        return $this->fileUrl($this->signature_path);
+        return $this->fileUrl('signature', $this->signature_path);
     }
 
     public function stampUrl(): ?string
     {
-        return $this->fileUrl($this->stamp_path);
+        return $this->fileUrl('stamp', $this->stamp_path);
     }
 
-    public function logoData(): ?string
+    public function imagePath(string $kind): ?string
     {
-        return $this->fileData($this->logo_path);
+        return match ($kind) {
+            'signature' => $this->signature_path,
+            'stamp' => $this->stamp_path,
+            default => null,
+        };
     }
 
     public function signatureData(): ?string
@@ -58,7 +56,7 @@ class CompanySetting extends Model
     public function documentImages(): array
     {
         return [
-            'logo' => $this->logoData(),
+            'logo' => CompanyProfile::logoData(),
             'signature' => $this->signatureData(),
             'stamp' => $this->stampData(),
         ];
@@ -96,9 +94,13 @@ class CompanySetting extends Model
         }
     }
 
-    private function fileUrl(?string $path): ?string
+    private function fileUrl(string $kind, ?string $path): ?string
     {
-        return $path === null ? null : Storage::disk(self::DISK)->url($path);
+        if ($path === null) {
+            return null;
+        }
+
+        return route('company.image', ['kind' => $kind]).'?v='.substr(md5($path), 0, 8);
     }
 
     private function fileData(?string $path): ?string

@@ -8,7 +8,6 @@ use App\Models\Concerns\HasActivities;
 use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -35,10 +34,17 @@ class Client extends Model
         ];
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function accountManager(): BelongsTo
+    /**
+     * Klien yang dihapus meninggalkan MoU dan invoicenya berdiri sendiri, jadi
+     * dokumennya tetap bisa dibuka dan diunduh tanpa induk.
+     */
+    protected static function booted(): void
     {
-        return $this->belongsTo(User::class, 'account_manager_id');
+        static::deleting(function (Client $client): void {
+            Contract::withTrashed()->where('client_id', $client->id)->update(['client_id' => null]);
+            Invoice::withTrashed()->where('client_id', $client->id)->update(['client_id' => null]);
+            Lead::withTrashed()->where('converted_client_id', $client->id)->update(['converted_client_id' => null]);
+        });
     }
 
     /** @return HasMany<Lead, $this> */
@@ -57,14 +63,6 @@ class Client extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
-    }
-
-    /**
-     * @param  Builder<Client>  $query
-     */
-    public function scopeActive(Builder $query): void
-    {
-        $query->where('status', ClientStatus::Active);
     }
 
     public static function deriveShortCode(string $companyName): string

@@ -10,7 +10,7 @@ export function AgingCard({ aging }: { aging: { label: string; total: number; co
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Umur piutang</CardTitle>
+        <CardTitle className="text-base">Umur piutang saat ini</CardTitle>
         <p className="text-2xl font-semibold">{rupiah(agingTotal)}</p>
       </CardHeader>
 

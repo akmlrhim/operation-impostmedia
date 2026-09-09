@@ -10,7 +10,7 @@ import { TabNav } from '@/components/crm/tab-nav';
 import { Button } from '@/components/ui/button';
 import { useRealtime } from '@/hooks/use-realtime';
 import { index } from '@/routes/leads';
-import type { LeadCard, LeadStageColumn, Option, Paginated, UserRef } from '@/types/crm';
+import type { LeadCard, LeadStageColumn, Option, Paginated, ServiceOption } from '@/types/crm';
 
 type Tab = 'kanban' | 'table';
 
@@ -31,11 +31,11 @@ type Props = {
   stages?: LeadStageColumn[];
   leads?: Paginated<LeadRow>;
   filters?: TableFilters;
-  priorities: Option[];
-  users: UserRef[];
   sources: Option[];
   statuses: Option[];
+  temperatures: Option[];
   stageTypes: Option[];
+  services: ServiceOption[];
 };
 
 type LeadModalState = { lead?: LeadCard; stageId: number | null };
@@ -52,11 +52,11 @@ export default function LeadsIndex({
   stages,
   leads,
   filters,
-  priorities,
-  users,
   sources,
   statuses,
+  temperatures,
   stageTypes,
+  services,
 }: Props) {
   useRealtime(['leads', 'lead-stages'], ['stages', 'leads']);
 
@@ -132,7 +132,7 @@ export default function LeadsIndex({
         {tab === 'kanban' && stages && (
           <LeadKanbanBoard
             stages={stages}
-            priorities={priorities}
+            temperatures={temperatures}
             onAddLead={(stageId) => setLeadModal({ stageId })}
             onEditLead={(lead, stageId) => setLeadModal({ lead, stageId })}
             onAddStage={() => setStageModal({})}
@@ -145,8 +145,9 @@ export default function LeadsIndex({
             leads={leads}
             filters={filters}
             stageOptions={stageOptions}
-            priorities={priorities}
             statuses={statuses}
+            sources={sources}
+            temperatures={temperatures}
             onFilterStage={(filterStage) => applyFilters({ filterStage })}
             onFilterStatus={(status) => applyFilters({ status })}
             onSort={toggleSort}
@@ -160,10 +161,10 @@ export default function LeadsIndex({
           lead={leadModal.lead}
           stageId={leadModal.stageId}
           stages={stageOptions.map((stage) => ({ id: stage.id, name: stage.name }))}
-          users={users}
-          priorities={priorities}
           sources={sources}
           statuses={statuses}
+          temperatures={temperatures}
+          services={services}
           onClose={() => setLeadModal(null)}
         />
       )}

@@ -38,10 +38,7 @@ class ClientRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:100'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_position' => ['nullable', 'string', 'max:255'],
-            'contact_email' => ['nullable', 'email', 'max:255'],
-            'contact_phone' => ['nullable', 'string', 'max:50'],
             'status' => ['required', Rule::enum(ClientStatus::class)],
-            'account_manager_id' => ['nullable', 'exists:users,id'],
             'notes' => ['nullable', 'string'],
         ];
     }

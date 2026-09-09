@@ -1,9 +1,9 @@
+import { Link } from '@inertiajs/react';
 import { ArrowRightLeft, CalendarDays, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { InitialBadge } from '@/components/crm/initial-badge';
 import { StatusBadge } from '@/components/crm/status-badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useInitials } from '@/hooks/use-initials';
 import { daysFromToday, rupiah, rupiahCompact, shortDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { show } from '@/routes/leads';
 import type { LeadCard, Option } from '@/types/crm';
 
 function MetaChip({
@@ -45,35 +45,32 @@ function MetaChip({
 
 export function LeadKanbanCard({
   lead,
-  priorities,
+  temperatures,
   onEdit,
   onConvert,
   onDelete,
 }: {
   lead: LeadCard;
-  priorities: Option[];
+  temperatures: Option[];
   onEdit: () => void;
   onConvert: () => void;
   onDelete: () => void;
 }) {
-  const getInitials = useInitials();
-  const dueInDays = daysFromToday(lead.next_follow_up_at);
+  const dueInDays = daysFromToday(lead.next_action_date);
 
   return (
     <article className="group rounded-xl border bg-card p-3 shadow-xs transition-shadow duration-150 hover:shadow-md motion-reduce:transition-none">
       <div className="flex items-center gap-2">
         <InitialBadge name={lead.company_name} />
-        <span className="min-w-0 truncate text-xs text-muted-foreground">{lead.company_name}</span>
+        <Link
+          href={show(lead.id)}
+          draggable={false}
+          className="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {lead.company_name}
+        </Link>
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          {lead.owner && (
-            <Avatar className="size-6" title={`Pemilik: ${lead.owner.name}`}>
-              <AvatarFallback className="text-[10px] font-medium">
-                {getInitials(lead.owner.name)}
-              </AvatarFallback>
-            </Avatar>
-          )}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -107,21 +104,24 @@ export function LeadKanbanCard({
         </div>
       </div>
 
-      <button
-        type="button"
+      <Link
+        href={show(lead.id)}
         draggable={false}
-        onClick={onEdit}
         className="mt-2 block w-full truncate text-left text-sm font-medium hover:underline"
       >
         {lead.contact_name}
-      </button>
+      </Link>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <StatusBadge value={lead.priority} options={priorities} />
+        <StatusBadge value={lead.temperature} options={temperatures} />
 
-        {lead.next_follow_up_at && (
-          <MetaChip icon={CalendarDays} overdue={dueInDays !== null && dueInDays < 0}>
-            {shortDate(lead.next_follow_up_at)}
+        {lead.next_action_date && (
+          <MetaChip
+            icon={CalendarDays}
+            overdue={dueInDays !== null && dueInDays < 0}
+            title={lead.next_action ?? undefined}
+          >
+            {shortDate(lead.next_action_date)}
           </MetaChip>
         )}
 

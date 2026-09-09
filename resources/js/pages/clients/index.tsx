@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useRealtime } from '@/hooks/use-realtime';
 import { index } from '@/routes/clients';
-import type { Client, Option, Paginated, UserRef } from '@/types/crm';
+import type { Client, Option, Paginated } from '@/types/crm';
 
 type Filters = {
   status: string;
@@ -29,11 +29,10 @@ type Props = {
   clients: Paginated<Client>;
   filters: Filters;
   statuses: Option[];
-  users: UserRef[];
   filterClients: Pick<Client, 'id' | 'company_name'>[];
 };
 
-export default function ClientsIndex({ clients, filters, statuses, users, filterClients }: Props) {
+export default function ClientsIndex({ clients, filters, statuses, filterClients }: Props) {
   useRealtime(['clients', 'contracts', 'invoices'], ['clients']);
 
   const [clientModal, setClientModal] = useState<{ client?: Client } | null>(null);
@@ -116,7 +115,6 @@ export default function ClientsIndex({ clients, filters, statuses, users, filter
         <ClientFormModal
           client={clientModal.client}
           statuses={statuses}
-          users={users}
           onClose={() => setClientModal(null)}
         />
       )}

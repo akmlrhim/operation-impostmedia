@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('price', 18, 2)->default(0);
             $table->string('unit')->default('paket');
             $table->string('billing_type')->default('one_time');
+            $table->boolean('requires_visit')->default(false);
             $table->unsignedInteger('position')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

@@ -7,16 +7,15 @@ import { FormModal } from '@/components/crm/form-modal';
 import { FormSection } from '@/components/crm/form-section';
 import { Button } from '@/components/ui/button';
 import { shortCode as shortCodeUrl, store, update } from '@/routes/clients';
-import type { Client, Option, UserRef } from '@/types/crm';
+import type { Client, Option } from '@/types/crm';
 
 type Props = {
   client?: Client;
   statuses: Option[];
-  users: UserRef[];
   onClose: () => void;
 };
 
-export function ClientFormModal({ client, statuses, users, onClose }: Props) {
+export function ClientFormModal({ client, statuses, onClose }: Props) {
   const isEdit = Boolean(client);
 
   const form = useForm<ClientFormData>({
@@ -28,10 +27,7 @@ export function ClientFormModal({ client, statuses, users, onClose }: Props) {
     city: client?.city ?? '',
     contact_name: client?.contact_name ?? '',
     contact_position: client?.contact_position ?? '',
-    contact_email: client?.contact_email ?? '',
-    contact_phone: client?.contact_phone ?? '',
     status: client?.status ?? 'active',
-    account_manager_id: client?.account_manager_id ? String(client.account_manager_id) : '',
     notes: client?.notes ?? '',
   });
 
@@ -110,7 +106,7 @@ export function ClientFormModal({ client, statuses, users, onClose }: Props) {
         </FormSection>
 
         <FormSection title="PIC & penanggung jawab" className="lg:border-l lg:pl-6">
-          <ClientFormModalContact form={form} users={users} />
+          <ClientFormModalContact form={form} />
         </FormSection>
       </div>
     </FormModal>

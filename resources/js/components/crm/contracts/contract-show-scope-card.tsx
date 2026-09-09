@@ -10,10 +10,6 @@ export function ContractShowScopeCard({ contract }: { contract: Contract }) {
         <CardTitle className="text-base">Ruang lingkup pekerjaan</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {contract.scope && (
-          <p className="text-sm whitespace-pre-line text-muted-foreground">{contract.scope}</p>
-        )}
-
         <DocumentItems items={contract.items ?? []} />
 
         <div className="ml-auto w-full max-w-xs space-y-1.5 text-sm">
@@ -21,6 +17,12 @@ export function ContractShowScopeCard({ contract }: { contract: Contract }) {
             <span className="text-muted-foreground">Subtotal</span>
             <span>{rupiah(contract.subtotal)}</span>
           </div>
+          {Number(contract.discount_amount) > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Diskon</span>
+              <span>−{rupiah(contract.discount_amount)}</span>
+            </div>
+          )}
           {Number(contract.tax_amount) > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">PPN {decimal(contract.tax_percent)}%</span>

@@ -26,19 +26,21 @@ class BulkActionsTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    public function test_contracts_can_be_bulk_deleted_but_ones_with_invoices_are_skipped(): void
+    public function test_contracts_can_be_bulk_deleted_even_when_they_have_invoices(): void
     {
         $client = $this->makeClient();
-        $keep = $this->makeContract($client, 'IM-MOU-0101-PRJ-001');
-        $remove = $this->makeContract($client, 'IM-MOU-0101-PRJ-002');
+        $first = $this->makeContract($client, 'IM-MOU-0101-PRJ-001');
+        $second = $this->makeContract($client, 'IM-MOU-0101-PRJ-002');
 
-        Invoice::create($this->invoiceAttributes($client, $keep, 'IM-INV-0101-PRJ-001'));
+        $invoice = Invoice::create($this->invoiceAttributes($client, $first, 'IM-INV-0101-PRJ-001'));
 
-        $this->delete(route('contracts.destroy-bulk'), ['ids' => [$keep->id, $remove->id]])
+        $this->delete(route('contracts.destroy-bulk'), ['ids' => [$first->id, $second->id]])
             ->assertRedirect();
 
-        $this->assertNotNull(Contract::find($keep->id));
-        $this->assertNull(Contract::find($remove->id));
+        $this->assertNull(Contract::find($first->id));
+        $this->assertNull(Contract::find($second->id));
+        $this->assertNotNull($invoice->fresh());
+        $this->assertNull($invoice->fresh()->contract_id);
     }
 
     public function test_contracts_can_be_exported_as_csv(): void
@@ -53,24 +55,24 @@ class BulkActionsTest extends TestCase
         $this->assertStringContainsString($contract->number, $response->streamedContent());
     }
 
-    public function test_invoices_can_be_bulk_deleted_but_ones_with_payments_are_skipped(): void
+    public function test_invoices_can_be_bulk_deleted_even_when_they_have_payments(): void
     {
         $client = $this->makeClient();
-        $keep = Invoice::create($this->invoiceAttributes($client, null, 'IM-INV-0101-PRJ-010'));
-        $remove = Invoice::create($this->invoiceAttributes($client, null, 'IM-INV-0101-PRJ-011'));
+        $paid = Invoice::create($this->invoiceAttributes($client, null, 'IM-INV-0101-PRJ-010'));
+        $plain = Invoice::create($this->invoiceAttributes($client, null, 'IM-INV-0101-PRJ-011'));
 
         Payment::create([
-            'invoice_id' => $keep->id,
+            'invoice_id' => $paid->id,
             'amount' => 100_000,
             'paid_at' => now(),
             'method' => 'transfer',
         ]);
 
-        $this->delete(route('invoices.destroy-bulk'), ['ids' => [$keep->id, $remove->id]])
+        $this->delete(route('invoices.destroy-bulk'), ['ids' => [$paid->id, $plain->id]])
             ->assertRedirect();
 
-        $this->assertNotNull(Invoice::find($keep->id));
-        $this->assertNull(Invoice::find($remove->id));
+        $this->assertNull(Invoice::find($paid->id));
+        $this->assertNull(Invoice::find($plain->id));
     }
 
     public function test_leads_can_be_bulk_deleted(): void
@@ -87,18 +89,21 @@ class BulkActionsTest extends TestCase
         $this->assertNull(Lead::find($second->id));
     }
 
-    public function test_clients_can_be_bulk_deleted_but_ones_with_invoices_are_skipped(): void
+    public function test_clients_can_be_bulk_deleted_even_when_they_have_documents(): void
     {
-        $keep = $this->makeClient('PT Simpan');
-        $remove = $this->makeClient('PT Hapus');
+        $billed = $this->makeClient('PT Sudah Ditagih');
+        $plain = $this->makeClient('PT Belum Apa-apa');
 
-        Invoice::create($this->invoiceAttributes($keep, null, 'IM-INV-0101-PRJ-020'));
+        $contract = $this->makeContract($billed, 'IM-MOU-0101-PRJ-020');
+        $invoice = Invoice::create($this->invoiceAttributes($billed, $contract, 'IM-INV-0101-PRJ-020'));
 
-        $this->delete(route('clients.destroy-bulk'), ['ids' => [$keep->id, $remove->id]])
+        $this->delete(route('clients.destroy-bulk'), ['ids' => [$billed->id, $plain->id]])
             ->assertRedirect();
 
-        $this->assertNotNull(Client::find($keep->id));
-        $this->assertNull(Client::find($remove->id));
+        $this->assertNull(Client::find($billed->id));
+        $this->assertNull(Client::find($plain->id));
+        $this->assertNull($invoice->fresh()->client_id);
+        $this->assertNull($contract->fresh()->client_id);
     }
 
     public function test_bulk_delete_requires_at_least_one_id(): void
@@ -161,7 +166,6 @@ class BulkActionsTest extends TestCase
             'company_name' => $name,
             'contact_name' => 'Budi',
             'estimated_value' => 10_000_000,
-            'priority' => 'medium',
             'status' => 'open',
             'position' => 0,
         ];

@@ -1,26 +1,36 @@
 import { Link, router } from '@inertiajs/react';
-import { Download, FilePenLine, FileText, Pencil, Printer, Receipt, Trash2 } from 'lucide-react';
+import {
+  Download,
+  FilePenLine,
+  FileText,
+  MoreHorizontal,
+  Pencil,
+  PenLine,
+  Trash2,
+} from 'lucide-react';
 import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import {
-  document as documentRoute,
-  edit,
-  finalize,
-  invoice as makeInvoice,
-  pdf,
-  print,
-} from '@/routes/contracts';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { document as documentRoute, edit, finalize, pdf } from '@/routes/contracts';
 import type { Contract } from '@/types/crm';
+
+const SIGNABLE = ['draft', 'review', 'sent'];
 
 export function ContractShowActions({
   contract,
-  canInvoice,
   confirm,
+  onSign,
   onDelete,
 }: {
   contract: Contract;
-  canInvoice: boolean;
   confirm: ConfirmFn;
+  onSign: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -32,15 +42,6 @@ export function ContractShowActions({
         </Link>
       </Button>
 
-      <Button
-        variant="outline"
-        aria-label="Generate dokumen"
-        onClick={() => router.post(finalize(contract.id), {}, { preserveScroll: true })}
-      >
-        <FileText className="size-4" />
-        <span className="hidden sm:inline">Generate dokumen</span>
-      </Button>
-
       <Button variant="outline" asChild>
         <Link href={documentRoute(contract.id)} aria-label="Sunting isi dokumen">
           <FilePenLine className="size-4" />
@@ -48,49 +49,57 @@ export function ContractShowActions({
         </Link>
       </Button>
 
-      <Button variant="outline" asChild>
-        <a href={print(contract.id).url} target="_blank" rel="noreferrer" aria-label="Cetak MoU">
-          <Printer className="size-4" />
-          <span className="hidden sm:inline">Cetak</span>
-        </a>
-      </Button>
-
-      <Button variant="outline" asChild>
-        <a href={pdf(contract.id).url} aria-label="Unduh PDF">
-          <Download className="size-4" />
-          <span className="hidden sm:inline">Unduh PDF</span>
-        </a>
-      </Button>
-
-      {canInvoice && (
-        <Button
-          aria-label="Terbitkan invoice"
-          onClick={() => router.post(makeInvoice(contract.id))}
-        >
-          <Receipt className="size-4" />
-          <span className="hidden sm:inline">Terbitkan invoice</span>
+      {SIGNABLE.includes(contract.status) && (
+        <Button aria-label="Tandatangani MoU" onClick={onSign}>
+          <PenLine className="size-4" />
+          <span className="hidden sm:inline">Tandatangani</span>
         </Button>
       )}
 
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Hapus MoU"
-        onClick={async () => {
-          const confirmed = await confirm({
-            title: `Hapus ${contract.number}?`,
-            description: 'Nomor MoU yang sudah terpakai tidak dipakai ulang.',
-            confirmLabel: 'Hapus MoU',
-            destructive: true,
-          });
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="Aksi dokumen lainnya">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
-          if (confirmed) {
-            onDelete();
-          }
-        }}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onSelect={() => router.post(finalize(contract.id), {}, { preserveScroll: true })}
+          >
+            <FileText className="size-4" />
+            Generate dokumen
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <a href={pdf(contract.id).url}>
+              <Download className="size-4" />
+              Unduh PDF
+            </a>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={async () => {
+              const confirmed = await confirm({
+                title: `Hapus ${contract.number}?`,
+                description: 'Nomor MoU yang sudah terpakai tidak dipakai ulang.',
+                confirmLabel: 'Hapus MoU',
+                destructive: true,
+              });
+
+              if (confirmed) {
+                onDelete();
+              }
+            }}
+          >
+            <Trash2 className="size-4" />
+            Hapus MoU
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </>
   );
 }

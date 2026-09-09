@@ -5,6 +5,7 @@ namespace App\Actions\Crm;
 use App\Enums\ContractType;
 use App\Models\CompanySetting;
 use App\Models\Contract;
+use App\Support\CompanyProfile;
 use App\Support\Documents\BlockRenderer;
 use App\Support\Documents\DocumentVariables;
 use App\Support\Documents\MouTemplate;
@@ -22,7 +23,7 @@ class RenderContractDocument
             : $this->legacy($contract);
 
         if ($persist) {
-            $contract->update(['body' => $html]);
+            $contract->cacheRenderedBody($html);
         }
 
         return $html;
@@ -30,8 +31,10 @@ class RenderContractDocument
 
     public function editable(Contract $contract): string
     {
-        if ($contract->document_body !== null) {
-            return $contract->document_body;
+        $edited = $contract->editedBody();
+
+        if ($edited !== null) {
+            return $edited;
         }
 
         $contract->load(['items.servicePackage', 'client']);
@@ -44,7 +47,7 @@ class RenderContractDocument
             MouTemplate::blocks($contract),
             MouTemplate::settings(),
             DocumentVariables::forContract($contract),
-            CompanySetting::current()->documentImages(),
+            $this->images($contract),
             $contract,
             $contract->aiClausePoints(),
         );
@@ -58,19 +61,32 @@ class RenderContractDocument
             $body,
             $contract->type === ContractType::Mou ? MouTemplate::settings() : [],
             DocumentVariables::forContract($contract),
-            CompanySetting::current()->documentImages(),
+            $this->images($contract),
             preview: true,
         );
     }
 
+    /**
+     * @return array<string, string|null>
+     */
+    private function images(Contract $contract): array
+    {
+        return [
+            ...CompanySetting::current()->documentImages(),
+            'client_signature' => $contract->signatureData(),
+        ];
+    }
+
     private function fromMouTemplate(Contract $contract): string
     {
-        if ($contract->document_body !== null) {
+        $edited = $contract->editedBody();
+
+        if ($edited !== null) {
             return $this->renderer->page(
-                $contract->document_body,
+                $edited,
                 MouTemplate::settings(),
                 DocumentVariables::forContract($contract),
-                CompanySetting::current()->documentImages(),
+                $this->images($contract),
             );
         }
 
@@ -78,7 +94,7 @@ class RenderContractDocument
             MouTemplate::blocks($contract),
             MouTemplate::settings(),
             DocumentVariables::forContract($contract),
-            CompanySetting::current()->documentImages(),
+            $this->images($contract),
             $contract,
             clauses: $contract->aiClausePoints(),
         );
@@ -90,6 +106,7 @@ class RenderContractDocument
             'contract' => $contract,
             'client' => $contract->client,
             'company' => CompanySetting::current(),
+            'profile' => CompanyProfile::all(),
         ])->render();
     }
 }

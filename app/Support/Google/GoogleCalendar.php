@@ -32,15 +32,6 @@ class GoogleCalendar
         return $this->send('post', '/events', $event);
     }
 
-    /**
-     * @param  array<string, mixed>  $event
-     * @return array<string, mixed>
-     */
-    public function updateEvent(string $eventId, array $event): array
-    {
-        return $this->send('patch', "/events/{$eventId}", $event);
-    }
-
     public function deleteEvent(string $eventId): void
     {
         $response = $this->request()->delete($this->url("/events/{$eventId}"));

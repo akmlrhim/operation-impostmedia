@@ -7,6 +7,28 @@ import { cn } from '@/lib/utils';
 
 export type { KanbanColumn };
 
+const DRAG_IMAGE_SHADOW = '0 24px 48px -16px rgba(0,0,0,0.35), 0 8px 16px -8px rgba(0,0,0,0.18)';
+
+function setLiftedDragImage(event: React.DragEvent<HTMLElement>, source: HTMLElement) {
+  const rect = source.getBoundingClientRect();
+  const clone = source.cloneNode(true) as HTMLElement;
+
+  clone.style.position = 'fixed';
+  clone.style.top = '-9999px';
+  clone.style.left = '-9999px';
+  clone.style.width = `${rect.width}px`;
+  clone.style.height = `${rect.height}px`;
+  clone.style.margin = '0';
+  clone.style.pointerEvents = 'none';
+  clone.style.opacity = '1';
+  clone.style.transform = 'scale(1.03)';
+  clone.style.boxShadow = DRAG_IMAGE_SHADOW;
+
+  document.body.appendChild(clone);
+  event.dataTransfer.setDragImage(clone, event.clientX - rect.left, event.clientY - rect.top);
+  setTimeout(() => clone.remove(), 0);
+}
+
 export function Kanban<T>({
   columns,
   getItemId,
@@ -29,48 +51,61 @@ export function Kanban<T>({
   trailing?: ReactNode;
 }) {
   const {
+    containerRef,
     renderedColumns,
     rects,
     settledIds,
+    justMovedId,
     draggingHeight,
     setDraggingHeight,
     target,
     setTarget,
     setDragging,
     draggingColumn,
-    setDraggingColumn,
-    columnTarget,
-    setColumnTarget,
+    startColumnDrag,
+    trackColumnPointer,
+    finishColumnDrag,
     dragging,
     reset,
-    resetColumn,
     handleDrop,
-    handleColumnDrop,
   } = useKanbanState({ columns, getItemId, getItemColumnId, onMove, onReorderColumns });
 
   return (
-    <div className="flex h-full gap-4 overflow-x-auto pb-2">
+    <div
+      ref={containerRef}
+      className="relative flex h-full gap-4 overflow-x-auto pb-2"
+      onDragOver={(event) => {
+        if (draggingColumn !== null) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          trackColumnPointer(event.clientX);
+        }
+      }}
+      onDrop={(event) => {
+        if (draggingColumn !== null) {
+          event.preventDefault();
+          finishColumnDrag(true);
+        }
+      }}
+    >
       {renderedColumns.map((column) => {
         const isTargetColumn = target?.columnId === column.id;
-        const isColumnTarget = columnTarget === column.id && draggingColumn !== column.id;
 
         return (
           <FlipBox
             key={column.id}
             id={`col:${column.id}`}
+            data-kanban-column=""
             rects={rects}
-            disabled={draggingColumn !== null || settledIds.has(`col:${column.id}`)}
+            disabled={settledIds.has(`col:${column.id}`)}
             className={cn(
               'flex h-full w-76 shrink-0 flex-col rounded-xl transition-colors duration-150 motion-reduce:transition-none',
-              isColumnTarget && 'ring-2 ring-primary/40 ring-inset',
-              draggingColumn === column.id && 'opacity-40',
+              draggingColumn === column.id && 'opacity-45',
             )}
             onDragOver={(event) => {
               event.preventDefault();
 
               if (draggingColumn !== null) {
-                setColumnTarget(column.id);
-
                 return;
               }
 
@@ -82,14 +117,11 @@ export function Kanban<T>({
               }
             }}
             onDrop={(event) => {
-              event.preventDefault();
-
               if (draggingColumn !== null) {
-                handleColumnDrop(column.id);
-
                 return;
               }
 
+              event.preventDefault();
               handleDrop(column.id);
             }}
           >
@@ -105,9 +137,10 @@ export function Kanban<T>({
 
                 event.dataTransfer.effectAllowed = 'move';
                 event.dataTransfer.setData('text/plain', `column:${column.id}`);
-                setDraggingColumn(column.id);
+                setLiftedDragImage(event, event.currentTarget);
+                startColumnDrag(column.id);
               }}
-              onDragEnd={resetColumn}
+              onDragEnd={() => finishColumnDrag(false)}
               className={cn(
                 'flex shrink-0 items-center gap-2 px-2 pb-2',
                 onReorderColumns !== undefined && 'cursor-grab active:cursor-grabbing',
@@ -142,22 +175,25 @@ export function Kanban<T>({
                     <FlipBox
                       id={`card:${id}`}
                       rects={rects}
-                      disabled={dragging !== null || settledIds.has(`card:${id}`)}
+                      disabled={
+                        dragging !== null || draggingColumn !== null || settledIds.has(`card:${id}`)
+                      }
+                      elevateOnMove={justMovedId === `card:${id}`}
                       draggable
                       onDragStart={(event) => {
                         event.dataTransfer.effectAllowed = 'move';
                         event.dataTransfer.setData('text/plain', String(id));
                         setDraggingHeight(event.currentTarget.getBoundingClientRect().height);
                         setDragging(item);
+                        setLiftedDragImage(event, event.currentTarget);
                       }}
                       onDragEnd={reset}
                       onDragOver={(event) => {
-                        event.preventDefault();
-
                         if (draggingColumn !== null) {
                           return;
                         }
 
+                        event.preventDefault();
                         event.stopPropagation();
 
                         const rect = event.currentTarget.getBoundingClientRect();
@@ -172,7 +208,7 @@ export function Kanban<T>({
                       }}
                       className={cn(
                         'cursor-grab rounded-xl outline-2 outline-offset-2 outline-transparent transition-[opacity,outline-color,transform] duration-150 outline-dashed active:cursor-grabbing motion-reduce:transition-none',
-                        isDragged && 'scale-[0.97] opacity-50 outline-primary/40',
+                        isDragged && 'opacity-35 outline-primary/30',
                       )}
                     >
                       {renderItem(item)}

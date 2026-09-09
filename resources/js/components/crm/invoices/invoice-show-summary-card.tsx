@@ -24,9 +24,13 @@ export function InvoiceShowSummaryCard({
           <StatusBadge value={invoice.status} options={statuses} />
         </DetailRow>
         <DetailRow label="Klien">
-          <Link href={showClient(invoice.client_id)} className="hover:underline">
-            {invoice.client?.company_name}
-          </Link>
+          {invoice.client_id === null ? (
+            <span className="text-muted-foreground">Tanpa klien</span>
+          ) : (
+            <Link href={showClient(invoice.client_id)} className="hover:underline">
+              {invoice.client?.company_name}
+            </Link>
+          )}
         </DetailRow>
         {invoice.contract && (
           <DetailRow label="MoU">

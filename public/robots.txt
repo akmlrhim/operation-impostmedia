@@ -1,2 +1,8 @@
+# CRM internal Impost Media. Setiap respons mengirim
+# X-Robots-Tag: noindex, nofollow -- itulah yang menahan pengindeksan.
+#
+# Perayapan sengaja TIDAK diblokir di sini: kalau diblokir, mesin pencari
+# tidak pernah membaca aturan noindex tadi, sehingga URL yang terlanjur
+# terindeks bisa tetap bertahan di hasil pencarian.
 User-agent: *
 Disallow:

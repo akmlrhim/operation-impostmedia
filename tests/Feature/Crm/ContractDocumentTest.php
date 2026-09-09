@@ -77,29 +77,29 @@ class ContractDocumentTest extends TestCase
         );
     }
 
-    public function test_saving_drops_the_frozen_body_so_printing_shows_the_edit(): void
+    public function test_saving_drops_the_frozen_body_so_the_editable_render_shows_the_edit(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $contract = $this->makeContract();
         $this->post(route('contracts.finalize', $contract));
 
-        $this->assertNotNull($contract->refresh()->body);
+        $this->assertNotNull($contract->renderedBody());
 
         $this->put(route('contracts.document.update', $contract), [
             'body' => '<p>Versi hasil suntingan.</p>',
         ]);
 
-        $this->assertNull($contract->refresh()->body);
+        $this->assertNull($contract->renderedBody());
 
-        $this->get(route('contracts.print', $contract))
-            ->assertOk()
-            ->assertSee('Versi hasil suntingan.', escape: false);
+        $rendered = app(RenderContractDocument::class)->editable($contract);
+
+        $this->assertStringContainsString('Versi hasil suntingan.', $rendered);
     }
 
     public function test_an_already_archived_pdf_is_rewritten_so_the_download_is_not_stale(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $contract = $this->makeContract();
         $this->post(route('contracts.finalize', $contract));
@@ -107,19 +107,19 @@ class ContractDocumentTest extends TestCase
         $path = $contract->refresh()->file_path;
         $this->assertNotNull($path);
 
-        $before = Storage::disk('public')->get($path);
+        $before = Storage::disk('local')->get($path);
 
         $this->put(route('contracts.document.update', $contract), [
             'body' => '<p>Isi yang benar-benar berbeda supaya berkasnya ikut berubah.</p>',
         ]);
 
         $this->assertSame($path, $contract->refresh()->file_path);
-        $this->assertNotSame($before, Storage::disk('public')->get($path));
+        $this->assertNotSame($before, Storage::disk('local')->get($path));
     }
 
     public function test_a_contract_without_an_archive_yet_is_not_given_one_by_saving(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $contract = $this->makeContract();
 
@@ -137,8 +137,8 @@ class ContractDocumentTest extends TestCase
 
         $contract->refresh();
 
-        $this->assertNull($contract->document_body);
-        $this->assertNull($contract->body);
+        $this->assertNull($contract->editedBody());
+        $this->assertNull($contract->renderedBody());
         $this->assertStringContainsString(
             'RUANG LINGKUP KERJASAMA',
             app(RenderContractDocument::class)->handle($contract, persist: false),
@@ -168,7 +168,7 @@ class ContractDocumentTest extends TestCase
             'body' => '<p onclick="steal()">Isi sah.</p><script>alert(1)</script>',
         ]);
 
-        $saved = (string) $contract->refresh()->document_body;
+        $saved = (string) $contract->editedBody();
 
         $this->assertStringContainsString('Isi sah.', $saved);
         $this->assertStringNotContainsString('onclick', $saved);

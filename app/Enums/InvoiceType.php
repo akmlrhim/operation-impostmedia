@@ -20,14 +20,4 @@ enum InvoiceType: string implements HasLabel
             self::Recurring => 'Invoice Retainer',
         };
     }
-
-    public function prefix(): string
-    {
-        return match ($this) {
-            self::Invoice, self::Recurring => 'INV',
-            self::Proforma => 'PRO',
-            self::DownPayment => 'INV-DP',
-            self::Final => 'INV-FIN',
-        };
-    }
 }

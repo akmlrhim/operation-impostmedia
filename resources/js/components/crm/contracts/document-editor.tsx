@@ -97,7 +97,7 @@ export function DocumentEditor({
 
     // `srcDoc` can finish parsing before this effect runs (React flushes
     // effects for the whole tree after commit, and the iframe starts
-    // loading as soon as it's inserted) — if that happens the 'load'
+    // loading as soon as it's inserted). If that happens the 'load'
     // event fires and is missed, leaving the document permanently
     // non-editable. Attach immediately when that's already the case.
     if (iframe.contentDocument?.readyState === 'complete') {

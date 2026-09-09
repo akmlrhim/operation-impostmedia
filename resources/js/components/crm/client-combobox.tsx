@@ -90,7 +90,7 @@ export function ClientCombobox({
           <button
             type="button"
             onClick={() => pick(null)}
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
           >
             <Check aria-hidden className={cn('size-4 shrink-0', value !== null && 'opacity-0')} />
             {placeholder}
@@ -107,7 +107,7 @@ export function ClientCombobox({
               key={client.id}
               type="button"
               onClick={() => pick(client.id)}
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
             >
               <Check
                 aria-hidden

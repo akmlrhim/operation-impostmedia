@@ -1,8 +1,9 @@
 import { Link, router } from '@inertiajs/react';
-import { Ban, Download, Pencil, Plus, Send, Trash2 } from 'lucide-react';
+import { BadgeCheck, Ban, Download, Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { edit, pdf, send, voidMethod as voidInvoice } from '@/routes/invoices';
+import { rupiah } from '@/lib/format';
+import { edit, pdf, send, settle, voidMethod as voidInvoice } from '@/routes/invoices';
 import type { Invoice } from '@/types/crm';
 
 export function InvoiceShowActions({
@@ -41,10 +42,30 @@ export function InvoiceShowActions({
       )}
 
       {!isDraft && !isVoid && balance > 0 && (
-        <Button aria-label="Catat pembayaran" onClick={onPay}>
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">Catat pembayaran</span>
-        </Button>
+        <>
+          <Button variant="outline" aria-label="Catat pembayaran" onClick={onPay}>
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">Catat pembayaran</span>
+          </Button>
+
+          <Button
+            aria-label="Lunaskan invoice"
+            onClick={async () => {
+              const confirmed = await confirm({
+                title: `Lunaskan ${invoice.number}?`,
+                description: `Sisa ${rupiah(invoice.balance_due)} dicatat sebagai pembayaran transfer hari ini.`,
+                confirmLabel: 'Lunaskan',
+              });
+
+              if (confirmed) {
+                router.post(settle(invoice.id), {}, { preserveScroll: true });
+              }
+            }}
+          >
+            <BadgeCheck className="size-4" />
+            <span className="hidden sm:inline">Lunaskan</span>
+          </Button>
+        </>
       )}
 
       <Button variant="outline" asChild>
@@ -77,27 +98,26 @@ export function InvoiceShowActions({
         </Button>
       )}
 
-      {isDraft && (
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Hapus invoice"
-          onClick={async () => {
-            const confirmed = await confirm({
-              title: `Hapus invoice ${invoice.number}?`,
-              description: 'Nomor invoice yang sudah terpakai tidak dipakai ulang.',
-              confirmLabel: 'Hapus invoice',
-              destructive: true,
-            });
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Hapus invoice"
+        onClick={async () => {
+          const confirmed = await confirm({
+            title: `Hapus invoice ${invoice.number}?`,
+            description:
+              'Pembayaran yang tercatat ikut terhapus, dan nomor invoice-nya tidak dipakai ulang.',
+            confirmLabel: 'Hapus invoice',
+            destructive: true,
+          });
 
-            if (confirmed) {
-              onDelete();
-            }
-          }}
-        >
-          <Trash2 className="size-4" />
-        </Button>
-      )}
+          if (confirmed) {
+            onDelete();
+          }
+        }}
+      >
+        <Trash2 className="size-4" />
+      </Button>
     </>
   );
 }

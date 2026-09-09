@@ -4,9 +4,9 @@ namespace App\Support\Crm;
 
 use App\Enums\InvoiceType;
 use App\Models\Client;
-use App\Models\CompanySetting;
 use App\Models\Contract;
 use App\Models\Service;
+use App\Support\CompanyProfile;
 use App\Support\EnumOptions;
 
 class InvoiceFormOptions
@@ -29,7 +29,7 @@ class InvoiceFormOptions
                     'is_recurring' => $contract->billing_cycle->isRecurring(),
                 ]),
             'services' => Service::pickable(),
-            'company' => CompanySetting::current(),
+            'company' => CompanyProfile::all(),
             'types' => EnumOptions::from(InvoiceType::class),
         ];
     }

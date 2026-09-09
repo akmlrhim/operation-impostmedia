@@ -64,25 +64,23 @@ export function ContractForm({
     lead_id: contract?.lead_id ? String(contract.lead_id) : lead ? String(lead.id) : '',
     type: contract?.type ?? 'mou',
     title: contract?.title ?? '',
-    scope: contract?.scope ?? '',
     start_date: contract?.start_date ?? '',
     end_date: contract?.end_date ?? '',
-    signing_place: contract?.signing_place ?? company.city ?? '',
+    signing_place: contract?.signing_place ?? company.city,
     signed_date: contract?.signed_date ?? today(),
+    discount_amount: contract?.discount_amount ?? '0',
     tax_percent: contract?.tax_percent ?? '0',
-    payment_terms: contract?.payment_terms ?? '',
     billing_cycle: contract?.billing_cycle ?? 'one_time',
     next_invoice_date: contract?.next_invoice_date ?? '',
     first_party_name: contract?.first_party_name ?? '',
     first_party_position: contract?.first_party_position ?? '',
-    second_party_name: contract?.second_party_name ?? company.signatory_name ?? '',
-    second_party_position: contract?.second_party_position ?? company.signatory_position ?? '',
     status: contract?.status ?? 'draft',
     items: (contract?.items?.length ? contract.items : [{ ...emptyLineItem }]) as LineItem[],
   });
 
   const subtotal = form.data.items.reduce((sum, item) => sum + lineAmount(item), 0);
-  const tax = subtotal * (Number(form.data.tax_percent) / 100);
+  const base = Math.max(subtotal - Number(form.data.discount_amount || 0), 0);
+  const tax = base * (Number(form.data.tax_percent) / 100);
 
   const numberEdited = useRef(false);
 
@@ -138,6 +136,7 @@ export function ContractForm({
           form={form}
           services={services}
           subtotal={subtotal}
+          base={base}
           tax={tax}
           aiScopePoints={aiScopePoints}
         />

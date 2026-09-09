@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import type { Client, Option } from '@/types/crm';
 
 export function ContractFormDetails({
@@ -197,32 +196,6 @@ export function ContractFormDetails({
           id="next_invoice_date"
           value={form.data.next_invoice_date}
           onChange={(value) => form.setData('next_invoice_date', value)}
-        />
-      </Field>
-
-      <Field
-        label="Ruang lingkup tambahan"
-        htmlFor="scope"
-        className="lg:col-span-2"
-        hint="Paragraf pengantar sebelum tabel pekerjaan."
-        error={form.errors.scope}
-      >
-        <Textarea
-          id="scope"
-          rows={3}
-          value={form.data.scope}
-          onChange={(e) => form.setData('scope', e.target.value)}
-          placeholder="Masukkan ruang lingkup tambahan"
-        />
-      </Field>
-
-      <Field label="Tata cara pembayaran" htmlFor="payment_terms" error={form.errors.payment_terms}>
-        <Textarea
-          id="payment_terms"
-          rows={3}
-          value={form.data.payment_terms}
-          onChange={(e) => form.setData('payment_terms', e.target.value)}
-          placeholder="Masukkan tata cara pembayaran"
         />
       </Field>
     </FormGrid>

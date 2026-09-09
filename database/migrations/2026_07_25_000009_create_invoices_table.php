@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->string('number')->unique();
-            $table->foreignId('client_id')->constrained()->restrictOnDelete();
+            $table->foreignId('client_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('contract_id')->nullable()->constrained()->nullOnDelete();
 
             $table->string('type')->default('invoice');
@@ -36,7 +36,6 @@ return new class extends Migration
             $table->json('billing_snapshot')->nullable();
 
             $table->string('file_path')->nullable();
-            $table->timestamp('sent_at')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

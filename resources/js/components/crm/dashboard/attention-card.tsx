@@ -27,7 +27,7 @@ export function AttentionCard({ attention }: { attention: AttentionItem[] }) {
       <CardHeader className="flex-row items-center gap-3">
         <CardTitle className="mr-auto flex items-center gap-2 text-base">
           <ListChecks className="size-4" />
-          Butuh perhatian
+          Butuh perhatian saat ini
         </CardTitle>
         <Link
           href={invoicesIndex()}

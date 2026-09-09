@@ -48,7 +48,7 @@ export function ClientTable({
         noun="klien"
         exportHref={exportClients({ query: { ids: Array.from(selection.selected) } }).url}
         deleteTitle={`Hapus ${selection.count} klien?`}
-        deleteDescription="Klien yang sudah punya invoice akan dilewati. Sisanya beserta MoU dan riwayat aktivitasnya ikut hilang."
+        deleteDescription="MoU dan invoice klien ini tetap tersimpan, tapi jadi tanpa klien."
         onDelete={() => {
           router.delete(destroyBulk().url, {
             data: { ids: Array.from(selection.selected) },
@@ -84,12 +84,6 @@ export function ClientTable({
                 direction={direction}
                 onClick={() => onSort('contact_name')}
               />
-              <SortableTableHead
-                label="Account Manager"
-                active={sort === 'account_manager'}
-                direction={direction}
-                onClick={() => onSort('account_manager')}
-              />
               <TableHead className="text-center">MoU</TableHead>
               <TableHead className="text-center">Invoice</TableHead>
               <SortableTableHead
@@ -104,7 +98,7 @@ export function ClientTable({
           <TableBody>
             {clients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   Belum ada klien yang cocok.
                 </TableCell>
               </TableRow>
@@ -123,15 +117,12 @@ export function ClientTable({
                   <Link href={show(client.id)} className="font-medium hover:underline">
                     {client.company_name}
                   </Link>
-                  {client.city && <p className="text-xs text-muted-foreground">{client.city}</p>}
+                  {client.city && <p>{client.city}</p>}
                 </TableCell>
                 <TableCell>
                   {client.contact_name ?? '-'}
-                  {client.contact_position && (
-                    <p className="text-xs text-muted-foreground">{client.contact_position}</p>
-                  )}
+                  {client.contact_position && <p>{client.contact_position}</p>}
                 </TableCell>
-                <TableCell>{client.account_manager?.name ?? '-'}</TableCell>
                 <TableCell className="text-center">
                   <DocumentMenu
                     icon={FileSignature}
@@ -190,13 +181,11 @@ export function ClientTable({
                         label: 'Hapus klien',
                         icon: Trash2,
                         destructive: true,
-                        disabledReason:
-                          (client.invoices_count ?? 0) > 0 ? 'Sudah punya invoice.' : undefined,
                         onSelect: async () => {
                           const confirmed = await confirm({
                             title: `Hapus klien ${client.company_name}?`,
                             description:
-                              'MoU dan riwayat aktivitas klien ini ikut hilang dari daftar.',
+                              'MoU dan invoice-nya tetap tersimpan, tapi jadi tanpa klien.',
                             confirmLabel: 'Hapus klien',
                             destructive: true,
                           });

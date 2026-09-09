@@ -2,8 +2,6 @@
 
 @import 'tw-animate-css';
 
-@import '@fontsource-variable/geist';
-
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
@@ -11,11 +9,10 @@
 
 @theme {
   --font-sans:
-    'Geist Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Noto Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
 
   --default-font-family: var(--font-sans);
-  --default-font-feature-settings: 'calt' 0, 'cv01', 'cv02', 'cv03', 'cv04', 'cv11';
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -207,17 +204,32 @@
   }
 
   html {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   @media (width < 40rem) {
     html {
-      font-size: 14px;
+      font-size: 13px;
     }
   }
 
   body {
     @apply bg-background text-foreground;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Header tabel selalu huruf besar, termasuk tabel yang dirakit tanpa
+     komponen TableHead. `thead` dipakai sebagai penanda supaya <th scope="row">
+     di dalam tbody -- yang isinya data, bukan label kolom -- tidak ikut. */
+  thead th {
+    text-transform: uppercase;
+  }
+
+  /* Browser memasang `text-transform: none` pada kontrol form lewat UA
+     stylesheet, dan Preflight hanya mewariskan font, letter-spacing, dan color
+     -- tidak text-transform. Tanpa baris ini label di dalam tombol sortir
+     berhenti mengikuti header-nya dan tetap huruf campuran. */
+  thead th :is(button, select, input, textarea) {
+    text-transform: inherit;
   }
 }

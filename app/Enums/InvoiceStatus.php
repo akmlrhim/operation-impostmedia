@@ -23,18 +23,6 @@ enum InvoiceStatus: string implements HasLabel
         };
     }
 
-    public function color(): string
-    {
-        return match ($this) {
-            self::Draft => 'slate',
-            self::Sent => 'blue',
-            self::PartiallyPaid => 'amber',
-            self::Paid => 'green',
-            self::Overdue => 'red',
-            self::Void => 'slate',
-        };
-    }
-
     public function isEditable(): bool
     {
         return $this === self::Draft;

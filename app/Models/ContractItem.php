@@ -48,9 +48,4 @@ class ContractItem extends Model
     {
         return $this->belongsTo(ServicePackage::class);
     }
-
-    public function calculateAmount(): float
-    {
-        return (float) $this->quantity * (float) $this->unit_price;
-    }
 }

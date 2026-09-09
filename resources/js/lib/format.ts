@@ -16,15 +16,17 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   year: 'numeric',
 });
 
-const longDateFormatter = new Intl.DateTimeFormat('id-ID', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
 const shortDateFormatter = new Intl.DateTimeFormat('id-ID', {
   day: 'numeric',
   month: 'short',
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
 });
 
 export function rupiah(value: number | string | null | undefined): string {
@@ -66,20 +68,20 @@ export function formatDate(value: string | null | undefined): string {
   return dateFormatter.format(new Date(value));
 }
 
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return '-';
+  }
+
+  return dateTimeFormatter.format(new Date(value));
+}
+
 export function shortDate(value: string | null | undefined): string {
   if (!value) {
     return '-';
   }
 
   return shortDateFormatter.format(new Date(value));
-}
-
-export function formatLongDate(value: string | null | undefined): string {
-  if (!value) {
-    return '-';
-  }
-
-  return longDateFormatter.format(new Date(value));
 }
 
 export function daysFromToday(value: string | null | undefined): number | null {

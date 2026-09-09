@@ -4,6 +4,7 @@ namespace App\Support\Cloudflare;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class Turnstile
 {
@@ -23,6 +24,8 @@ class Turnstile
     public function verify(?string $token, ?string $ip = null): bool
     {
         if ($token === null || $token === '') {
+            Log::warning('Turnstile: peramban tidak mengirim token.', ['ip' => $ip]);
+
             return false;
         }
 
@@ -40,6 +43,17 @@ class Turnstile
             return true;
         }
 
-        return $response->successful() && $response->json('success') === true;
+        if ($response->successful() && $response->json('success') === true) {
+            return true;
+        }
+
+        Log::warning('Turnstile: Cloudflare menolak token.', [
+            'ip' => $ip,
+            'status' => $response->status(),
+            'error_codes' => $response->json('error-codes'),
+            'hostname' => $response->json('hostname'),
+        ]);
+
+        return false;
     }
 }

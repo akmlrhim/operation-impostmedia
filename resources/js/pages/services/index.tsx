@@ -88,7 +88,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                     <button
                       type="button"
                       onClick={() => setServiceModal({ service })}
-                      className="text-left font-medium hover:underline"
+                      className="cursor-pointer text-left font-medium hover:underline"
                     >
                       {service.name}
                     </button>

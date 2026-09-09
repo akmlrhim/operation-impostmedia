@@ -1,7 +1,8 @@
 import type { InertiaForm } from '@inertiajs/react';
 import { Field, FormGrid } from '@/components/crm/field';
 import type { LeadFormData } from '@/components/crm/lead-form-modal-types';
-import { DateField, DateTimeField } from '@/components/ui/date-field';
+import { ServicePackageMultiCombobox } from '@/components/crm/service-package-multi-combobox';
+import { DateField } from '@/components/ui/date-field';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
 import {
@@ -12,37 +13,78 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Option, UserRef } from '@/types/crm';
+import { formatDate, rupiah } from '@/lib/format';
+import type { LeadCard, Option, ServiceOption } from '@/types/crm';
+
+function masterTotal(services: ServiceOption[], packageIds: number[]): number | null {
+  if (packageIds.length === 0) {
+    return null;
+  }
+
+  const catalog = services.flatMap((service) => service.packages);
+
+  return packageIds.reduce((sum, id) => {
+    const found = catalog.find((servicePackage) => servicePackage.id === id);
+
+    return sum + (found ? Number(found.price) : 0);
+  }, 0);
+}
+
+function lastInvoiceLabel(lead?: LeadCard) {
+  if (!lead?.last_invoice) {
+    return 'Belum ada invoice';
+  }
+
+  const { number, issue_date: issueDate } = lead.last_invoice;
+
+  return issueDate ? `${number} · ${formatDate(issueDate)}` : number;
+}
 
 export function LeadFormModalFields({
   form,
+  lead,
   stages,
-  users,
-  priorities,
   sources,
   statuses,
+  temperatures,
+  services,
 }: {
   form: InertiaForm<LeadFormData>;
+  lead?: LeadCard;
   stages: { id: number; name: string }[];
-  users: UserRef[];
-  priorities: Option[];
   sources: Option[];
   statuses: Option[];
+  temperatures: Option[];
+  services: ServiceOption[];
 }) {
+  const masterPrice = masterTotal(services, form.data.service_package_ids);
+
   return (
-    <FormGrid className="lg:grid-cols-3">
-      <Field
-        label="Nama perusahaan"
-        htmlFor="company_name"
-        required
-        error={form.errors.company_name}
-      >
+    <FormGrid className="lg:grid-cols-4">
+      <Field label="Tanggal masuk" htmlFor="date_in" required error={form.errors.date_in}>
+        <DateField
+          id="date_in"
+          value={form.data.date_in}
+          onChange={(value) => form.setData('date_in', value)}
+        />
+      </Field>
+
+      <Field label="Nama klien" htmlFor="company_name" required error={form.errors.company_name}>
         <Input
           id="company_name"
           value={form.data.company_name}
           onChange={(e) => form.setData('company_name', e.target.value)}
-          placeholder="Masukkan nama perusahaan"
+          placeholder="Masukkan nama klien"
           required
+        />
+      </Field>
+
+      <Field label="Industri" htmlFor="industry" error={form.errors.industry}>
+        <Input
+          id="industry"
+          value={form.data.industry}
+          onChange={(e) => form.setData('industry', e.target.value)}
+          placeholder="Masukkan bidang industri"
         />
       </Field>
 
@@ -56,6 +98,15 @@ export function LeadFormModalFields({
         />
       </Field>
 
+      <Field label="Telepon" htmlFor="phone" error={form.errors.phone}>
+        <Input
+          id="phone"
+          value={form.data.phone}
+          onChange={(e) => form.setData('phone', e.target.value)}
+          placeholder="Masukkan nomor telepon"
+        />
+      </Field>
+
       <Field label="Email" htmlFor="email" error={form.errors.email}>
         <Input
           id="email"
@@ -66,27 +117,12 @@ export function LeadFormModalFields({
         />
       </Field>
 
-      <Field label="Telepon" htmlFor="phone" error={form.errors.phone}>
+      <Field label="Asal daerah" htmlFor="region" error={form.errors.region}>
         <Input
-          id="phone"
-          value={form.data.phone}
-          onChange={(e) => form.setData('phone', e.target.value)}
-          placeholder="Masukkan nomor telepon"
-        />
-      </Field>
-
-      <Field
-        label="Estimasi nilai"
-        htmlFor="estimated_value"
-        required
-        error={form.errors.estimated_value}
-      >
-        <MoneyInput
-          id="estimated_value"
-          value={form.data.estimated_value}
-          onChange={(value) => form.setData('estimated_value', value)}
-          placeholder="Masukkan estimasi nilai"
-          required
+          id="region"
+          value={form.data.region}
+          onChange={(e) => form.setData('region', e.target.value)}
+          placeholder="Masukkan asal daerah"
         />
       </Field>
 
@@ -127,16 +163,128 @@ export function LeadFormModalFields({
         </Select>
       </Field>
 
-      <Field label="Prioritas" error={form.errors.priority}>
+      <Field label="PIC" htmlFor="pic" error={form.errors.pic}>
+        <Input
+          id="pic"
+          value={form.data.pic}
+          onChange={(e) => form.setData('pic', e.target.value)}
+          placeholder="Masukkan nama PIC"
+        />
+      </Field>
+
+      <Field label="PIC impost" htmlFor="pic_impost" error={form.errors.pic_impost}>
+        <Input
+          id="pic_impost"
+          value={form.data.pic_impost}
+          onChange={(e) => form.setData('pic_impost', e.target.value)}
+          placeholder="Masukkan nama PIC impost"
+        />
+      </Field>
+
+      <Field
+        label="Layanan dibutuhkan"
+        hint="Boleh pilih lebih dari satu. Estimasi nilai terisi dari jumlah harga paket di data master layanan."
+        className="sm:col-span-2"
+        error={form.errors.service_package_ids}
+      >
+        <ServicePackageMultiCombobox
+          services={services}
+          value={form.data.service_package_ids}
+          onChange={(packageIds) => {
+            const total = masterTotal(services, packageIds);
+
+            form.setData({
+              ...form.data,
+              service_package_ids: packageIds,
+              estimated_value: total === null ? form.data.estimated_value : String(total),
+            });
+          }}
+          ariaLabel="Pilih layanan yang dibutuhkan"
+          placeholder="Belum ditentukan"
+        />
+      </Field>
+
+      <Field label="Invoice terakhir">
+        <p className="flex h-9 items-center text-sm text-muted-foreground">
+          {lastInvoiceLabel(lead)}
+        </p>
+      </Field>
+
+      <Field
+        label="Estimasi nilai"
+        htmlFor="estimated_value"
+        required
+        error={form.errors.estimated_value}
+      >
+        <MoneyInput
+          id="estimated_value"
+          value={form.data.estimated_value}
+          onChange={(value) => form.setData('estimated_value', value)}
+          placeholder="Masukkan estimasi nilai"
+          required
+        />
+
+        {masterPrice !== null && masterPrice !== Number(form.data.estimated_value) && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Jumlah harga master {rupiah(masterPrice)}.{' '}
+            <button
+              type="button"
+              className="cursor-pointer underline underline-offset-2 hover:text-foreground"
+              onClick={() => form.setData('estimated_value', String(masterPrice))}
+            >
+              Pakai harga master
+            </button>
+          </p>
+        )}
+      </Field>
+
+      <Field
+        label="Kontak terakhir"
+        htmlFor="last_contact_date"
+        error={form.errors.last_contact_date}
+      >
+        <DateField
+          id="last_contact_date"
+          value={form.data.last_contact_date}
+          onChange={(value) => form.setData('last_contact_date', value)}
+        />
+      </Field>
+
+      <Field
+        label="Tanggal aksi berikutnya"
+        htmlFor="next_action_date"
+        error={form.errors.next_action_date}
+      >
+        <DateField
+          id="next_action_date"
+          value={form.data.next_action_date}
+          onChange={(value) => form.setData('next_action_date', value)}
+        />
+      </Field>
+
+      <Field label="Aksi berikutnya" htmlFor="next_action" error={form.errors.next_action}>
+        <Input
+          id="next_action"
+          value={form.data.next_action}
+          onChange={(e) => form.setData('next_action', e.target.value)}
+          placeholder="Misal: kirim penawaran"
+        />
+      </Field>
+
+      <Field
+        label="Suhu lead"
+        hint="Cold: baru masuk. Warm: sudah merespons. Hot: siap deal."
+        error={form.errors.temperature}
+      >
         <Select
-          value={form.data.priority}
-          onValueChange={(value) => form.setData('priority', value)}
+          value={form.data.temperature}
+          onValueChange={(value) => form.setData('temperature', value)}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {priorities.map((option) => (
+            {temperatures.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -145,26 +293,7 @@ export function LeadFormModalFields({
         </Select>
       </Field>
 
-      <Field label="Sales owner" error={form.errors.owner_id}>
-        <Select
-          value={form.data.owner_id || 'none'}
-          onValueChange={(value) => form.setData('owner_id', value === 'none' ? '' : value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Belum ditentukan</SelectItem>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={String(user.id)}>
-                {user.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Status" error={form.errors.status}>
+      <Field label="Status deal" error={form.errors.status}>
         <Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}>
           <SelectTrigger>
             <SelectValue />
@@ -180,26 +309,17 @@ export function LeadFormModalFields({
       </Field>
 
       <Field
-        label="Target closing"
-        htmlFor="expected_close_date"
-        error={form.errors.expected_close_date}
+        label="Link folder"
+        htmlFor="folder_url"
+        className="sm:col-span-2 lg:col-span-2"
+        error={form.errors.folder_url}
       >
-        <DateField
-          id="expected_close_date"
-          value={form.data.expected_close_date}
-          onChange={(value) => form.setData('expected_close_date', value)}
-        />
-      </Field>
-
-      <Field
-        label="Follow up berikutnya"
-        htmlFor="next_follow_up_at"
-        error={form.errors.next_follow_up_at}
-      >
-        <DateTimeField
-          id="next_follow_up_at"
-          value={form.data.next_follow_up_at}
-          onChange={(value) => form.setData('next_follow_up_at', value)}
+        <Input
+          id="folder_url"
+          type="url"
+          value={form.data.folder_url}
+          onChange={(e) => form.setData('folder_url', e.target.value)}
+          placeholder="https://drive.google.com/..."
         />
       </Field>
 
@@ -208,7 +328,7 @@ export function LeadFormModalFields({
           label="Alasan gagal"
           htmlFor="lost_reason"
           required
-          className="sm:col-span-2 lg:col-span-3"
+          className="sm:col-span-2 lg:col-span-4"
           error={form.errors.lost_reason}
         >
           <Input
@@ -224,7 +344,7 @@ export function LeadFormModalFields({
       <Field
         label="Catatan"
         htmlFor="notes"
-        className="sm:col-span-2 lg:col-span-3"
+        className="sm:col-span-2 lg:col-span-4"
         error={form.errors.notes}
       >
         <Textarea

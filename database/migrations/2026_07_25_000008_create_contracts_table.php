@@ -11,18 +11,14 @@ return new class extends Migration
         Schema::create('contracts', function (Blueprint $table) {
             $table->id();
             $table->string('number')->unique();
-            $table->foreignId('client_id')->constrained()->restrictOnDelete();
+            $table->foreignId('client_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('lead_id')->nullable()->constrained()->nullOnDelete();
 
             $table->string('type')->default('mou');
             $table->string('title');
-            $table->longText('scope')->nullable();
-
-            $table->longText('body')->nullable();
 
             $table->json('ai_clauses')->nullable();
-
-            $table->longText('document_body')->nullable();
+            $table->boolean('ai_requires_visit')->nullable();
 
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
@@ -30,18 +26,16 @@ return new class extends Migration
             $table->date('signed_date')->nullable();
 
             $table->decimal('subtotal', 18, 2)->default(0);
+            $table->decimal('discount_amount', 18, 2)->default(0);
             $table->decimal('tax_percent', 5, 2)->default(0);
             $table->decimal('tax_amount', 18, 2)->default(0);
             $table->decimal('value', 18, 2)->default(0);
 
-            $table->text('payment_terms')->nullable();
             $table->string('billing_cycle')->default('one_time');
             $table->date('next_invoice_date')->nullable();
 
             $table->string('first_party_name')->nullable();
             $table->string('first_party_position')->nullable();
-            $table->string('second_party_name')->nullable();
-            $table->string('second_party_position')->nullable();
 
             $table->string('status')->default('draft');
             $table->string('file_path')->nullable();
@@ -70,10 +64,19 @@ return new class extends Migration
 
             $table->index(['contract_id', 'position']);
         });
+
+        Schema::create('contract_documents', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('contract_id')->unique()->constrained()->cascadeOnDelete();
+            $table->longText('body')->nullable();
+            $table->longText('document_body')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('contract_documents');
         Schema::dropIfExists('contract_items');
         Schema::dropIfExists('contracts');
     }

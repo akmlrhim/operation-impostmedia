@@ -18,21 +18,53 @@ export type Paginated<T> = {
 
 export type LeadCard = {
   id: number;
+  date_in: string;
   company_name: string;
+  industry: string | null;
   contact_name: string;
   email: string | null;
   phone: string | null;
+  region: string | null;
   source: string | null;
+  pic: string | null;
+  pic_impost: string | null;
+  service_packages: { id: number; name: string; price: number }[];
+  last_invoice: { id: number; number: string; issue_date: string } | null;
   estimated_value: number;
-  priority: string;
-  status: string;
-  owner: UserRef | null;
-  owner_id: number | null;
-  lost_reason: string | null;
-  expected_close_date: string | null;
-  next_follow_up_at: string | null;
-  converted_client_id: number | null;
+  last_contact_date: string | null;
+  next_action_date: string | null;
+  next_action: string | null;
+  temperature: string;
   notes: string | null;
+  folder_url: string | null;
+  status: string;
+  lost_reason: string | null;
+  converted_client_id: number | null;
+};
+
+export type LeadActivity = {
+  id: number;
+  type: string;
+  type_label: string;
+  title: string;
+  description: string | null;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+  user: UserRef | null;
+};
+
+export type LeadDetail = LeadCard & {
+  stage: { id: number; name: string; color: string } | null;
+  services: {
+    id: number;
+    name: string;
+    price: number;
+    unit: string;
+    service_name: string | null;
+  }[];
+  converted_client: { id: number; company_name: string } | null;
+  attachments: AttachmentItem[];
 };
 
 export type LeadStageColumn = {
@@ -83,11 +115,7 @@ export type Client = {
   city: string | null;
   contact_name: string | null;
   contact_position: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
   status: string;
-  account_manager_id: number | null;
-  account_manager?: UserRef | null;
   notes: string | null;
   contracts_count?: number;
   attachments?: AttachmentItem[];
@@ -116,33 +144,37 @@ export type ContractClause = {
 export type Contract = {
   id: number;
   number: string;
-  client_id: number;
+  client_id: number | null;
   lead_id: number | null;
   client?: Client;
   type: string;
   title: string;
-  scope: string | null;
-  body: string | null;
   start_date: string | null;
   end_date: string | null;
   signing_place: string | null;
   signed_date: string | null;
   subtotal: string;
+  discount_amount: string;
   tax_percent: string;
   tax_amount: string;
   value: string;
-  payment_terms: string | null;
   billing_cycle: string;
   next_invoice_date: string | null;
   first_party_name: string | null;
   first_party_position: string | null;
-  second_party_name: string | null;
-  second_party_position: string | null;
   status: string;
   items?: LineItem[];
   attachments?: AttachmentItem[];
   invoices?: Invoice[];
   invoices_count?: number;
+};
+
+export type ContractGroup = {
+  id: number | null;
+  company_name: string;
+  contracts: Contract[];
+  contracts_count: number;
+  contracts_value: number | string | null;
 };
 
 export type Payment = {
@@ -157,7 +189,7 @@ export type Payment = {
 export type Invoice = {
   id: number;
   number: string;
-  client_id: number;
+  client_id: number | null;
   contract_id: number | null;
   client?: Client;
   contract?: { id: number; number: string; title: string } | null;
@@ -179,6 +211,15 @@ export type Invoice = {
   payments?: Payment[];
   payments_count?: number;
   attachments?: AttachmentItem[];
+};
+
+export type InvoiceGroup = {
+  id: number | null;
+  company_name: string;
+  invoices: Invoice[];
+  invoices_count: number;
+  invoices_total: number | string | null;
+  invoices_balance_due: number | string | null;
 };
 
 export type ContractOption = {
@@ -231,15 +272,17 @@ export type ServiceOption = {
   }[];
 };
 
-export type CompanyProfile = {
-  id: number;
+export type CompanyIdentity = {
   name: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  signatory_name: string | null;
-  signatory_position: string | null;
-  invoice_notes: string | null;
-  terms: string | null;
+  address: string;
+  city: string;
+  phone: string;
+  email: string;
+  signatory_name: string;
+  signatory_position: string;
+};
+
+export type CompanyProfile = CompanyIdentity & {
+  invoice_notes: string;
+  terms: string;
 };

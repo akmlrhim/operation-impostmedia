@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\BulkIdsRequest;
 use App\Http\Requests\Crm\ContractDocumentRequest;
 use App\Http\Requests\Crm\ContractRequest;
+use App\Http\Requests\Crm\ContractSignRequest;
 use App\Http\Requests\Crm\ScopePointsRequest;
 use App\Models\Client;
 use App\Models\Contract;
@@ -25,6 +26,7 @@ use App\Models\Lead;
 use App\Models\ServicePackage;
 use App\Support\Ai\Groq;
 use App\Support\BulkDeleteSummary;
+use App\Support\CompanyProfile;
 use App\Support\Crm\ContractFormOptions;
 use App\Support\Crm\ContractIndexQuery;
 use App\Support\Csv\CsvExport;
@@ -40,7 +42,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContractController extends Controller
@@ -72,14 +73,19 @@ class ContractController extends Controller
 
     public function show(Contract $contract): Response
     {
+        $contract->load([
+            'client', 'items.servicePackage:id,name', 'invoices', 'lead:id,company_name',
+            'attachments.uploader:id,name',
+        ]);
+
         return Inertia::render('contracts/show', [
-            'contract' => $contract->load([
-                'client', 'items.servicePackage:id,name', 'invoices', 'lead:id,company_name',
-                'attachments.uploader:id,name',
-            ]),
+            'contract' => $contract,
+            'company' => CompanyProfile::identity(),
+            'invoiceBlocker' => $contract->invoiceBlocker(),
             'types' => EnumOptions::from(ContractType::class),
             'statuses' => EnumOptions::from(ContractStatus::class),
             'billingCycles' => EnumOptions::from(BillingCycle::class),
+            'signatureUrl' => $contract->signatureUrl(),
             ...$this->clausePanel($contract),
         ]);
     }
@@ -103,7 +109,7 @@ class ContractController extends Controller
         return [
             'clauses' => $clauses,
             'aiClauses' => Groq::configured(),
-            'documentEdited' => $contract->document_body !== null,
+            'documentEdited' => $contract->isDocumentEdited(),
         ];
     }
 
@@ -153,7 +159,7 @@ class ContractController extends Controller
         return Inertia::render('contracts/document', [
             'contract' => $contract->only(['id', 'number', 'title']),
             'page' => $renderer->editorPage($contract, $renderer->editable($contract)),
-            'edited' => $contract->document_body !== null,
+            'edited' => $contract->isDocumentEdited(),
         ]);
     }
 
@@ -163,13 +169,10 @@ class ContractController extends Controller
         RenderContractDocument $renderer,
         ArchiveDocumentPdf $archiver,
     ): RedirectResponse {
-        $contract->update([
-            'document_body' => HtmlSanitizer::clean($request->validated()['body']),
-            'body' => null,
-        ]);
+        $contract->saveEditedBody(HtmlSanitizer::clean($request->validated()['body']));
 
         if ($contract->file_path !== null) {
-            $archiver->forContract($contract->refresh(), $renderer);
+            $archiver->forContract($contract, $renderer);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Dokumen disimpan.']);
@@ -179,7 +182,7 @@ class ContractController extends Controller
 
     public function resetDocument(Contract $contract): RedirectResponse
     {
-        $contract->update(['document_body' => null, 'body' => null]);
+        $contract->forgetDocument();
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -258,6 +261,51 @@ class ContractController extends Controller
         return to_route('contracts.show', $contract);
     }
 
+    public function sign(
+        ContractSignRequest $request,
+        Contract $contract,
+        RenderContractDocument $renderer,
+        ArchiveDocumentPdf $archiver,
+    ): RedirectResponse {
+        if (! $contract->status->canBeSigned()) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'MoU ini sudah lewat tahap tanda tangan.',
+            ]);
+
+            return back();
+        }
+
+        $data = $request->validated();
+        $file = $request->file('signature');
+
+        $contract->update([
+            'status' => ContractStatus::Signed,
+            'signed_date' => $data['signed_date'] ?? $contract->signed_date?->toDateString() ?? now()->toDateString(),
+            ...($file === null ? [] : ['signature_path' => $contract->replaceSignature($file)]),
+        ]);
+
+        if ($contract->file_path !== null) {
+            $renderer->handle($contract);
+            $archiver->forContract($contract, $renderer);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'MoU ditandai sudah ditandatangani.']);
+
+        return back();
+    }
+
+    public function signature(Contract $contract): StreamedResponse
+    {
+        $disk = Storage::disk(Contract::SIGNATURE_DISK);
+
+        abort_if($contract->signature_path === null || ! $disk->exists($contract->signature_path), 404);
+
+        return $disk->response($contract->signature_path, headers: [
+            'Cache-Control' => 'private, max-age=604800',
+        ]);
+    }
+
     public function finalize(
         Contract $contract,
         RenderContractDocument $renderer,
@@ -267,7 +315,7 @@ class ContractController extends Controller
         $warning = $this->writePendingClauses($contract, $writer);
 
         $renderer->handle($contract);
-        $archiver->forContract($contract->refresh(), $renderer);
+        $archiver->forContract($contract, $renderer);
 
         Inertia::flash('toast', $warning === null
             ? ['type' => 'success', 'message' => 'Dokumen MoU digenerate dan PDF diarsipkan.']
@@ -311,23 +359,12 @@ class ContractController extends Controller
         );
     }
 
-    public function print(Contract $contract, RenderContractDocument $renderer): HttpResponse
-    {
-        $body = $contract->body ?: $renderer->handle($contract, persist: false);
-
-        return response()->view('documents.print', [
-            'title' => $contract->number,
-            'body' => $body,
-        ]);
-    }
-
     public function invoice(Contract $contract, CreateInvoiceFromContract $creator): RedirectResponse
     {
-        if (! $contract->status->canBeInvoiced()) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => 'MoU harus berstatus ditandatangani dulu sebelum diterbitkan invoice.',
-            ]);
+        $blocker = $contract->invoiceBlocker();
+
+        if ($blocker !== null) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $blocker]);
 
             return back();
         }
@@ -341,15 +378,6 @@ class ContractController extends Controller
 
     public function destroy(Contract $contract): RedirectResponse
     {
-        if ($contract->invoices()->exists()) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => 'MoU tidak bisa dihapus karena sudah punya invoice.',
-            ]);
-
-            return back();
-        }
-
         $contract->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'MoU dihapus.']);
@@ -359,23 +387,13 @@ class ContractController extends Controller
 
     public function destroyBulk(BulkIdsRequest $request): RedirectResponse
     {
-        $contracts = Contract::query()->whereIn('id', $request->ids())->withCount('invoices')->get();
-
-        $deleted = 0;
-        $skipped = 0;
+        $contracts = Contract::query()->whereIn('id', $request->ids())->get();
 
         foreach ($contracts as $contract) {
-            if ($contract->invoices_count > 0) {
-                $skipped++;
-
-                continue;
-            }
-
             $contract->delete();
-            $deleted++;
         }
 
-        Inertia::flash('toast', BulkDeleteSummary::toast($deleted, $skipped, 'MoU', 'sudah punya invoice'));
+        Inertia::flash('toast', BulkDeleteSummary::toast($contracts->count(), 0, 'MoU', ''));
 
         return ListRedirect::to('contracts.index');
     }
@@ -384,6 +402,7 @@ class ContractController extends Controller
     {
         $contracts = Contract::query()
             ->whereIn('id', $request->ids())
+            ->select(['id', 'client_id', 'number', 'title', 'start_date', 'end_date', 'value', 'status'])
             ->with('client:id,company_name')
             ->orderBy('number')
             ->get();
@@ -394,7 +413,7 @@ class ContractController extends Controller
             $contracts->map(fn (Contract $contract): array => [
                 $contract->number,
                 $contract->title,
-                $contract->client->company_name,
+                $contract->client->company_name ?? 'Tanpa klien',
                 $contract->start_date?->format('Y-m-d') ?? '-',
                 $contract->end_date?->format('Y-m-d') ?? '-',
                 (string) $contract->value,

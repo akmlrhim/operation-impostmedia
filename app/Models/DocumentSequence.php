@@ -14,8 +14,6 @@ use Illuminate\Support\Facades\DB;
  * @property string $period
  * @property string $scope
  * @property string $prefix
- * @property string|null $format
- * @property int|null $padding
  * @property int $last_number
  */
 class DocumentSequence extends Model
@@ -37,7 +35,6 @@ class DocumentSequence extends Model
     {
         return [
             'type' => DocumentType::class,
-            'padding' => 'integer',
             'last_number' => 'integer',
         ];
     }
@@ -136,19 +133,14 @@ class DocumentSequence extends Model
         $type = $this->type;
         $number ??= $this->last_number;
 
-        return strtr($this->format ?? $type->numberFormat(), [
+        return strtr($type->numberFormat(), [
             '{prefix}' => $prefix ?? $this->prefix,
             '{code}' => static::clientCode($client),
             '{year}' => $date->format('Y'),
             '{yy}' => $date->format('y'),
             '{month}' => $date->format('m'),
             '{day}' => $date->format('d'),
-            '{number}' => str_pad(
-                (string) $number,
-                $this->padding ?? $type->padding(),
-                '0',
-                STR_PAD_LEFT,
-            ),
+            '{number}' => str_pad((string) $number, $type->padding(), '0', STR_PAD_LEFT),
         ]);
     }
 

@@ -39,7 +39,6 @@ class RealtimeBroadcastTest extends TestCase
             'company_name' => 'PT Kopi Nusantara',
             'contact_name' => 'Dewi Lestari',
             'estimated_value' => 96_000_000,
-            'priority' => 'high',
             'status' => 'open',
         ])->assertRedirect();
 

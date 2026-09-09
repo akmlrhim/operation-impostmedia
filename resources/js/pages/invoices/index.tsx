@@ -16,7 +16,7 @@ import {
 import { useRealtime } from '@/hooks/use-realtime';
 import { rupiahCompact } from '@/lib/format';
 import { create, index } from '@/routes/invoices';
-import type { Client, Invoice, Option, Paginated } from '@/types/crm';
+import type { Client, InvoiceGroup, Option, Paginated } from '@/types/crm';
 
 type Filters = {
   filterClient: number | null;
@@ -26,7 +26,8 @@ type Filters = {
 };
 
 type Props = {
-  invoices: Paginated<Invoice>;
+  groups: Paginated<InvoiceGroup>;
+  orphans: InvoiceGroup | null;
   filters: Filters;
   statuses: Option[];
   summary: { outstanding: number; overdue: number; draft: number };
@@ -34,13 +35,14 @@ type Props = {
 };
 
 export default function InvoicesIndex({
-  invoices,
+  groups,
+  orphans,
   filters,
   statuses,
   summary,
   filterClients,
 }: Props) {
-  useRealtime(['invoices'], ['invoices', 'summary']);
+  useRealtime(['invoices'], ['groups', 'orphans', 'summary']);
 
   function applyFilters(next: Partial<Filters>) {
     const merged = { ...filters, ...next };
@@ -122,14 +124,14 @@ export default function InvoicesIndex({
         </div>
 
         <InvoiceTable
-          invoices={invoices.data}
+          groups={orphans ? [orphans, ...groups.data] : groups.data}
           statuses={statuses}
           sort={filters.sort}
           direction={filters.direction}
           onSort={toggleSort}
         />
 
-        <Pagination meta={invoices} />
+        <Pagination meta={groups} />
       </div>
     </>
   );

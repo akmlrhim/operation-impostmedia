@@ -4,9 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <meta name="robots" content="noindex, nofollow">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <script>
+        <script nonce="{{ Illuminate\Support\Facades\Vite::cspNonce() }}">
             (function() {
                 const appearance = '{{ $appearance ?? "system" }}';
 
@@ -30,13 +31,15 @@
             }
         </style>
 
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@100..900&display=swap" rel="stylesheet">
+
         <link rel="icon" href="/favicon/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon/favicon.svg" type="image/svg+xml">
         <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96">
         <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
         <link rel="manifest" href="/favicon/site.webmanifest">
-
-        @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

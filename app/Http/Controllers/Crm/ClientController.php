@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\BulkIdsRequest;
 use App\Http\Requests\Crm\ClientRequest;
 use App\Models\Client;
-use App\Models\User;
 use App\Support\BulkDeleteSummary;
 use App\Support\Crm\ClientIndexQuery;
 use App\Support\Csv\CsvExport;
@@ -43,7 +42,6 @@ class ClientController extends Controller
                 'direction' => $direction,
             ],
             'statuses' => EnumOptions::from(ClientStatus::class),
-            'users' => User::query()->where('is_active', true)->get(['id', 'name']),
             'filterClients' => Client::query()
                 ->orderBy('company_name')
                 ->get(['id', 'company_name']),
@@ -64,11 +62,13 @@ class ClientController extends Controller
     public function show(Client $client): Response
     {
         return Inertia::render('clients/show', [
-            'client' => $client->load(['accountManager:id,name', 'attachments.uploader:id,name']),
-            'contracts' => $client->contracts()->latest('id')->get(),
+            'client' => $client->load('attachments.uploader:id,name'),
+            'contracts' => $client->contracts()
+                ->select(['id', 'client_id', 'number', 'title', 'value', 'status', 'start_date', 'end_date'])
+                ->latest('id')
+                ->get(),
             'invoices' => $client->invoices()->latest('id')->get(),
             'statuses' => EnumOptions::from(ClientStatus::class),
-            'users' => User::query()->where('is_active', true)->get(['id', 'name']),
         ]);
     }
 
@@ -101,15 +101,6 @@ class ClientController extends Controller
 
     public function destroy(Client $client): RedirectResponse
     {
-        if ($client->invoices()->exists()) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => 'Klien tidak bisa dihapus karena sudah punya invoice.',
-            ]);
-
-            return back();
-        }
-
         $client->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Klien dihapus.']);
@@ -119,23 +110,13 @@ class ClientController extends Controller
 
     public function destroyBulk(BulkIdsRequest $request): RedirectResponse
     {
-        $clients = Client::query()->whereIn('id', $request->ids())->withCount('invoices')->get();
-
-        $deleted = 0;
-        $skipped = 0;
+        $clients = Client::query()->whereIn('id', $request->ids())->get();
 
         foreach ($clients as $client) {
-            if ($client->invoices_count > 0) {
-                $skipped++;
-
-                continue;
-            }
-
             $client->delete();
-            $deleted++;
         }
 
-        Inertia::flash('toast', BulkDeleteSummary::toast($deleted, $skipped, 'klien', 'sudah punya invoice'));
+        Inertia::flash('toast', BulkDeleteSummary::toast($clients->count(), 0, 'klien', ''));
 
         return ListRedirect::to('clients.index');
     }
@@ -145,19 +126,17 @@ class ClientController extends Controller
         $clients = Client::query()
             ->whereIn('id', $request->ids())
             ->withCount(['contracts', 'invoices'])
-            ->with('accountManager:id,name')
             ->orderBy('company_name')
             ->get();
 
         return CsvExport::download(
             'klien-'.now()->format('Ymd-His').'.csv',
-            ['Perusahaan', 'PIC', 'Jabatan PIC', 'Kota', 'Account Manager', 'Status', 'Jumlah MoU', 'Jumlah Invoice'],
+            ['Perusahaan', 'PIC', 'Jabatan PIC', 'Kota', 'Status', 'Jumlah MoU', 'Jumlah Invoice'],
             $clients->map(fn (Client $client): array => [
                 $client->company_name,
                 $client->contact_name ?? '-',
                 $client->contact_position ?? '-',
                 $client->city ?? '-',
-                $client->account_manager_id === null ? '-' : $client->accountManager->name,
                 $client->status->label(),
                 (string) $client->contracts_count,
                 (string) $client->invoices_count,

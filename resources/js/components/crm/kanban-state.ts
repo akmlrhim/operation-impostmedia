@@ -1,9 +1,13 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+
+import { useColumnReorder } from '@/components/crm/kanban-column-drag';
 import { useKanbanOverrides } from '@/components/crm/kanban-overrides';
 import { useSettleGuard } from '@/components/crm/kanban-settle-guard';
 import type { DropTarget, KanbanColumn } from '@/components/crm/kanban-types';
 
 export type { KanbanColumn, DropTarget };
+
+const LANDING_HOLD = 400;
 
 export function useKanbanState<T>({
   columns,
@@ -21,24 +25,49 @@ export function useKanbanState<T>({
   const [dragging, setDragging] = useState<T | null>(null);
   const [draggingHeight, setDraggingHeight] = useState(96);
   const [target, setTarget] = useState<DropTarget | null>(null);
-  const [draggingColumn, setDraggingColumn] = useState<number | null>(null);
-  const [columnTarget, setColumnTarget] = useState<number | null>(null);
+  const [justMovedId, setJustMovedId] = useState<string | null>(null);
   const rects = useRef(new Map<string, DOMRect>());
 
   const { settledIds, guardAfterSettle } = useSettleGuard();
-  const { renderedColumns, setCardOverride, setColumnOverride } = useKanbanOverrides(
-    columns,
-    getItemId,
-  );
+  const {
+    renderedColumns: baseColumns,
+    setCardOverride,
+    setColumnOverride,
+  } = useKanbanOverrides(columns, getItemId);
+
+  const columnIds = useMemo(() => baseColumns.map((column) => column.id), [baseColumns]);
+
+  const {
+    containerRef,
+    draggingColumn,
+    previewIds,
+    startColumnDrag,
+    trackColumnPointer,
+    finishColumnDrag,
+  } = useColumnReorder({
+    ids: columnIds,
+    onCommit: (ids) => {
+      setColumnOverride(ids);
+      onReorderColumns?.(ids);
+    },
+  });
+
+  const renderedColumns = useMemo(() => {
+    if (!previewIds) {
+      return baseColumns;
+    }
+
+    const byId = new Map(baseColumns.map((column) => [column.id, column]));
+    const ordered = previewIds
+      .map((id) => byId.get(id))
+      .filter((column): column is KanbanColumn<T> => column !== undefined);
+
+    return ordered.length === baseColumns.length ? ordered : baseColumns;
+  }, [baseColumns, previewIds]);
 
   function reset() {
     setDragging(null);
     setTarget(null);
-  }
-
-  function resetColumn() {
-    setDraggingColumn(null);
-    setColumnTarget(null);
   }
 
   function handleDrop(columnId: number) {
@@ -69,6 +98,12 @@ export function useKanbanState<T>({
 
     setCardOverride({ itemId, columnId, index });
 
+    const movedId = `card:${itemId}`;
+    setJustMovedId(movedId);
+    setTimeout(() => {
+      setJustMovedId((current) => (current === movedId ? null : current));
+    }, LANDING_HOLD);
+
     const affectedColumnIds = new Set([columnId, fromColumn]);
 
     renderedColumns
@@ -80,34 +115,12 @@ export function useKanbanState<T>({
     reset();
   }
 
-  function handleColumnDrop(overId: number) {
-    if (draggingColumn === null || draggingColumn === overId) {
-      resetColumn();
-
-      return;
-    }
-
-    const ids = renderedColumns.map((column) => column.id);
-    const from = ids.indexOf(draggingColumn);
-    const to = ids.indexOf(overId);
-
-    if (from === -1 || to === -1) {
-      resetColumn();
-
-      return;
-    }
-
-    ids.splice(to, 0, ...ids.splice(from, 1));
-    setColumnOverride(ids);
-    ids.forEach((id) => guardAfterSettle(`col:${id}`));
-    onReorderColumns?.(ids);
-    resetColumn();
-  }
-
   return {
+    containerRef,
     renderedColumns,
     rects,
     settledIds,
+    justMovedId,
     dragging,
     setDragging,
     draggingHeight,
@@ -115,12 +128,10 @@ export function useKanbanState<T>({
     target,
     setTarget,
     draggingColumn,
-    setDraggingColumn,
-    columnTarget,
-    setColumnTarget,
+    startColumnDrag,
+    trackColumnPointer,
+    finishColumnDrag,
     reset,
-    resetColumn,
     handleDrop,
-    handleColumnDrop,
   };
 }

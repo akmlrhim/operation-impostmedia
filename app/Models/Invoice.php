@@ -16,6 +16,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int|null $client_id
+ * @property-read Client|null $client
  * @property string $number
  * @property InvoiceType $type
  * @property InvoiceStatus $status
@@ -87,12 +89,6 @@ class Invoice extends Model
         return $this->hasMany(Payment::class)->orderBy('paid_at');
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
     /**
      * @param  Builder<Invoice>  $query
      */
@@ -110,7 +106,7 @@ class Invoice extends Model
      */
     public function scopeOverdue(Builder $query): void
     {
-        $query->outstanding()->whereDate('due_date', '<', now());
+        $query->outstanding()->where('due_date', '<', now()->toDateString());
     }
 
     public function recalculate(): void
@@ -128,10 +124,5 @@ class Invoice extends Model
             'amount_paid' => $paid,
             'balance_due' => $total - $paid,
         ])->save();
-    }
-
-    public function isOverdue(): bool
-    {
-        return $this->status->isOutstanding() && $this->due_date->isPast();
     }
 }

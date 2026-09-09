@@ -41,12 +41,4 @@ class InvoiceItem extends Model
     {
         return $this->belongsTo(ServicePackage::class);
     }
-
-    /**
-     * @return BelongsTo<ContractItem, $this>
-     */
-    public function contractItem(): BelongsTo
-    {
-        return $this->belongsTo(ContractItem::class);
-    }
 }

@@ -23,15 +23,14 @@ class ConvertLeadToClient
                 'company_name' => $lead->company_name,
                 'email' => $lead->email,
                 'phone' => $lead->phone,
+                'city' => $lead->region,
                 'contact_name' => $lead->contact_name,
-                'account_manager_id' => $lead->owner_id,
                 'notes' => $lead->notes,
             ]);
 
             $attributes = [
                 'status' => LeadStatus::Won,
                 'converted_client_id' => $client->id,
-                'converted_at' => now(),
             ];
 
             if ($lead->stage->type !== LeadStageType::Won) {

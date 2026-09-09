@@ -23,7 +23,13 @@ class ScopePointsTest extends TestCase
         $this->seed(CrmMasterDataSeeder::class);
         $this->actingAs(User::factory()->create());
 
-        config(['services.groq.key' => 'kunci-tes', 'services.groq.model' => 'model-tes']);
+        config([
+            'services.groq.key' => 'kunci-tes',
+            'services.groq.model' => 'model-tes',
+            'services.groq.light_model' => 'model-tes',
+            'services.groq.reasoning_effort' => 'low',
+            'services.groq.reasoning_models' => ['model-tes'],
+        ]);
     }
 
     public function test_it_writes_points_from_the_line_and_its_catalog_package(): void
@@ -134,11 +140,75 @@ class ScopePointsTest extends TestCase
 
     public function test_groq_rejecting_the_request_is_reported_with_its_status(): void
     {
+        Http::fake(['api.groq.com/*' => Http::response(['error' => 'bad key'], 401)]);
+
+        $this->postJson(route('contracts.scope-points'), ['name' => 'Social Media Management'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, '401'));
+    }
+
+    /**
+     * Jatah harian Groq habis itu keadaan yang wajar dan bakal sering kena, jadi
+     * yang dibaca orang kantor harus kalimat biasa, bukan kode status.
+     */
+    public function test_a_spent_daily_quota_is_explained_in_plain_words(): void
+    {
         Http::fake(['api.groq.com/*' => Http::response(['error' => 'rate limited'], 429)]);
 
         $this->postJson(route('contracts.scope-points'), ['name' => 'Social Media Management'])
             ->assertUnprocessable()
-            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, '429'));
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'habis')
+                && ! str_contains($message, '429'));
+    }
+
+    public function test_the_same_line_is_only_paid_for_once(): void
+    {
+        $this->fakeGroq(['Kelola 3 platform media sosial']);
+
+        $payload = ['name' => 'Social Media Management'];
+
+        $this->postJson(route('contracts.scope-points'), $payload)->assertOk();
+        $this->postJson(route('contracts.scope-points'), $payload)
+            ->assertOk()
+            ->assertJson(['points' => ['Kelola 3 platform media sosial']]);
+
+        Http::assertSentCount(1);
+    }
+
+    /**
+     * groq/compound menolak reasoning_effort dengan 400, jadi parameter itu
+     * tidak boleh ikut terkirim begitu modelnya diganti ke compound.
+     */
+    public function test_a_model_that_does_not_think_is_not_sent_the_thinking_dial(): void
+    {
+        config(['services.groq.light_model' => 'groq/compound']);
+        $this->fakeGroq(['Kelola 3 platform media sosial']);
+
+        $this->postJson(route('contracts.scope-points'), ['name' => 'Social Media Management'])->assertOk();
+
+        Http::assertSent(fn (Request $request): bool => $request['model'] === 'groq/compound'
+            && ! isset($request['reasoning_effort'])
+            && $request['max_completion_tokens'] === 800);
+    }
+
+    public function test_a_model_the_key_may_not_touch_says_so_by_name(): void
+    {
+        Http::fake(['api.groq.com/*' => Http::response(['error' => 'blocked'], 403)]);
+
+        $this->postJson(route('contracts.scope-points'), ['name' => 'Social Media Management'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'model-tes')
+                && str_contains($message, 'belum diizinkan'));
+    }
+
+    public function test_the_request_is_capped_so_a_runaway_answer_cannot_drain_the_quota(): void
+    {
+        $this->fakeGroq(['Kelola 3 platform media sosial']);
+
+        $this->postJson(route('contracts.scope-points'), ['name' => 'Social Media Management'])->assertOk();
+
+        Http::assertSent(fn (Request $request): bool => $request['max_completion_tokens'] === 800
+            && $request['reasoning_effort'] === 'low');
     }
 
     /**

@@ -18,9 +18,6 @@ return new class extends Migration
 
             $table->string('prefix');
 
-            $table->string('format')->nullable();
-            $table->unsignedInteger('padding')->nullable();
-
             $table->unsignedInteger('last_number')->default(0);
             $table->timestamps();
 

@@ -3,7 +3,9 @@ import { relativeTime } from '@/lib/format';
 
 export function ActivitiesCard({
   activities,
+  period,
 }: {
+  period: string;
   activities: {
     id: number;
     type: string;
@@ -16,12 +18,12 @@ export function ActivitiesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Aktivitas terbaru</CardTitle>
+        <CardTitle className="text-base">Aktivitas {period}</CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="max-h-72 overflow-y-auto overscroll-contain">
         {activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Belum ada aktivitas tercatat.</p>
+          <p className="text-sm text-muted-foreground">Belum ada aktivitas pada periode ini.</p>
         ) : (
           <ol className="space-y-4">
             {activities.map((activity) => (

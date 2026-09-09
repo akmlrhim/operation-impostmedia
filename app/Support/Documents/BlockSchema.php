@@ -111,6 +111,7 @@ class BlockSchema
             self::ITEMS_TABLE => [
                 'columns' => ['no', 'name', 'quantity', 'unit_price', 'amount'],
                 'showSubtotal' => true,
+                'showDiscount' => true,
                 'showTax' => true,
                 'showTotal' => true,
                 'spaceBefore' => 6,
@@ -275,31 +276,5 @@ class BlockSchema
         }
 
         return $clauses;
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    public static function starterBlocks(): array
-    {
-        return self::normalize([
-            ['type' => self::HEADING, 'text' => 'Perjanjian Kerja Sama', 'level' => 1, 'uppercase' => false, 'spaceBefore' => 0],
-            ['type' => self::PARAGRAPH, 'html' => '<p>Nomor: <strong>{{ dokumen.nomor }}</strong></p>', 'align' => 'left'],
-            ['type' => self::PARAGRAPH, 'html' => '<p>Pada hari ini, {{ dokumen.hari }}, tanggal {{ dokumen.tanggal_panjang }} dibuat dan ditandatangani Perjanjian Kerja Sama oleh pihak-pihak sebagai berikut:</p>'],
-            ['type' => self::DEFINITION, 'title' => '1. Pihak Pertama :'],
-            ['type' => self::DEFINITION, 'title' => '2. Pihak Kedua :', 'rows' => [
-                ['label' => 'Nama', 'value' => '{{ perusahaan.nama }}'],
-                ['label' => 'Alamat', 'value' => '{{ perusahaan.alamat }}'],
-                ['label' => 'No. Telp', 'value' => '{{ perusahaan.telepon }}'],
-            ]],
-            ['type' => self::HEADING, 'text' => 'PASAL 1'],
-            ['type' => self::HEADING, 'text' => 'RUANG LINGKUP KERJASAMA', 'spaceBefore' => 0],
-            ['type' => self::ITEMS_TABLE],
-            ['type' => self::HEADING, 'text' => 'PASAL 2'],
-            ['type' => self::HEADING, 'text' => 'HAK DAN KEWAJIBAN PARA PIHAK', 'spaceBefore' => 0],
-            ['type' => self::AI_CLAUSE],
-            ['type' => self::PAGEBREAK],
-            ['type' => self::SIGNATURE],
-        ]);
     }
 }

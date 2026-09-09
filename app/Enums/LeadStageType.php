@@ -16,9 +16,4 @@ enum LeadStageType: string implements HasLabel
             self::Lost => 'Kalah',
         };
     }
-
-    public function isClosing(): bool
-    {
-        return $this !== self::Open;
-    }
 }

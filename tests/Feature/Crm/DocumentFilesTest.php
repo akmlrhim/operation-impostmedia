@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Crm;
 
+use App\Actions\Crm\RenderContractDocument;
 use App\Models\Client;
 use App\Models\CompanySetting;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\CompanyProfile;
 use Database\Seeders\CrmMasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -21,83 +23,101 @@ class DocumentFilesTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('public');
+        Storage::fake('local');
 
         $this->seed(CrmMasterDataSeeder::class);
         $this->actingAs(User::factory()->create());
     }
 
-    public function test_company_logo_and_signature_are_stored_and_shown_on_documents(): void
+    public function test_the_mou_logo_comes_from_the_bundled_file_not_an_upload(): void
+    {
+        $this->assertStringStartsWith('data:image/', (string) CompanyProfile::logoData());
+
+        $this->assertSame(
+            CompanyProfile::logoData(),
+            CompanySetting::current()->documentImages()['logo'],
+        );
+    }
+
+    public function test_a_logo_upload_is_ignored_because_the_field_is_gone(): void
     {
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
             'logo' => UploadedFile::fake()->image('logo.png'),
+        ])->assertRedirect();
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
+    }
+
+    public function test_signature_and_stamp_are_stored_and_readable_as_data_uris(): void
+    {
+        $this->put(route('company.update'), [
+            ...$this->companyPayload(),
             'signature' => UploadedFile::fake()->image('ttd.png'),
+            'stamp' => UploadedFile::fake()->image('meterai.png'),
         ])->assertRedirect();
 
         $company = CompanySetting::current()->fresh();
 
-        $this->assertNotNull($company->logo_path);
         $this->assertNotNull($company->signature_path);
-        Storage::disk('public')->assertExists($company->logo_path);
-        Storage::disk('public')->assertExists($company->signature_path);
+        $this->assertNotNull($company->stamp_path);
+        Storage::disk('local')->assertExists($company->signature_path);
+        Storage::disk('local')->assertExists($company->stamp_path);
 
-        $this->assertStringStartsWith('data:image/', (string) $company->logoData());
+        $this->assertStringStartsWith('data:image/', (string) $company->signatureData());
     }
 
-    public function test_replacing_the_logo_removes_the_previous_file(): void
+    public function test_replacing_the_signature_removes_the_previous_file(): void
     {
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
-            'logo' => UploadedFile::fake()->image('lama.png'),
+            'signature' => UploadedFile::fake()->image('lama.png'),
         ])->assertRedirect();
 
-        $first = CompanySetting::current()->fresh()->logo_path;
+        $first = CompanySetting::current()->fresh()->signature_path;
 
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
-            'logo' => UploadedFile::fake()->image('baru.png'),
+            'signature' => UploadedFile::fake()->image('baru.png'),
         ])->assertRedirect();
 
-        $second = CompanySetting::current()->fresh()->logo_path;
+        $second = CompanySetting::current()->fresh()->signature_path;
 
         $this->assertNotSame($first, $second);
-        Storage::disk('public')->assertMissing($first);
-        Storage::disk('public')->assertExists($second);
+        Storage::disk('local')->assertMissing($first);
+        Storage::disk('local')->assertExists($second);
     }
 
-    public function test_logo_can_be_cleared_without_touching_the_signature(): void
+    public function test_signature_can_be_cleared_without_touching_the_stamp(): void
     {
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
-            'logo' => UploadedFile::fake()->image('logo.png'),
             'signature' => UploadedFile::fake()->image('ttd.png'),
+            'stamp' => UploadedFile::fake()->image('meterai.png'),
         ])->assertRedirect();
 
-        $signature = CompanySetting::current()->fresh()->signature_path;
+        $stamp = CompanySetting::current()->fresh()->stamp_path;
 
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
-            'remove_logo' => true,
+            'remove_signature' => true,
         ])->assertRedirect();
 
         $company = CompanySetting::current()->fresh();
 
-        $this->assertNull($company->logo_path);
-        $this->assertSame($signature, $company->signature_path);
-        Storage::disk('public')->assertExists($signature);
+        $this->assertNull($company->signature_path);
+        $this->assertSame($stamp, $company->stamp_path);
+        Storage::disk('local')->assertExists($stamp);
     }
 
-    public function test_only_images_are_accepted_as_logo(): void
+    public function test_only_images_are_accepted_as_signature(): void
     {
-        $sebelum = CompanySetting::current()->logo_path;
-
         $this->put(route('company.update'), [
             ...$this->companyPayload(),
-            'logo' => UploadedFile::fake()->create('kontrak.pdf', 100, 'application/pdf'),
-        ])->assertSessionHasErrors('logo');
+            'signature' => UploadedFile::fake()->create('kontrak.pdf', 100, 'application/pdf'),
+        ])->assertSessionHasErrors('signature');
 
-        $this->assertSame($sebelum, CompanySetting::current()->fresh()->logo_path);
+        $this->assertNull(CompanySetting::current()->fresh()->signature_path);
     }
 
     public function test_finalizing_a_contract_archives_a_pdf(): void
@@ -109,8 +129,8 @@ class DocumentFilesTest extends TestCase
         $contract->refresh();
 
         $this->assertNotNull($contract->file_path);
-        Storage::disk('public')->assertExists($contract->file_path);
-        $this->assertStringStartsWith('%PDF', Storage::disk('public')->get($contract->file_path));
+        Storage::disk('local')->assertExists($contract->file_path);
+        $this->assertStringStartsWith('%PDF', Storage::disk('local')->get($contract->file_path));
     }
 
     public function test_sending_an_invoice_archives_a_pdf(): void
@@ -122,7 +142,7 @@ class DocumentFilesTest extends TestCase
         $invoice->refresh();
 
         $this->assertNotNull($invoice->file_path);
-        Storage::disk('public')->assertExists($invoice->file_path);
+        Storage::disk('local')->assertExists($invoice->file_path);
     }
 
     public function test_pdf_is_generated_on_demand_when_it_was_never_archived(): void
@@ -180,13 +200,13 @@ class DocumentFilesTest extends TestCase
         $this->assertSame('scan-mou.pdf', $attachment->name);
         $this->assertSame('application/pdf', $attachment->mime_type);
         $this->assertGreaterThan(0, $attachment->size);
-        Storage::disk('public')->assertExists($attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
 
         $this->get(route('attachments.download', $attachment))->assertOk();
 
         $this->delete(route('attachments.destroy', $attachment))->assertRedirect();
 
-        Storage::disk('public')->assertMissing($attachment->path);
+        Storage::disk('local')->assertMissing($attachment->path);
         $this->assertSame(0, $contract->attachments()->count());
     }
 
@@ -203,6 +223,88 @@ class DocumentFilesTest extends TestCase
         ])->assertNotFound();
 
         $this->assertSame(0, $contract->attachments()->count());
+    }
+
+    public function test_signing_stores_the_client_signature_and_prints_it_on_the_mou(): void
+    {
+        $contract = $this->makeDraftContract();
+
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd-klien.png'),
+            'signed_date' => '2026-05-20',
+        ])->assertRedirect();
+
+        $contract->refresh();
+
+        $this->assertNotNull($contract->signature_path);
+        Storage::disk('local')->assertExists($contract->signature_path);
+        $this->assertSame('signed', $contract->status->value);
+        $this->assertSame('2026-05-20', $contract->signed_date->toDateString());
+
+        $this->get(route('contracts.signature', $contract))->assertOk();
+
+        $this->assertStringContainsString(
+            (string) $contract->signatureData(),
+            app(RenderContractDocument::class)->handle($contract, persist: false),
+        );
+    }
+
+    public function test_signing_without_an_upload_leaves_the_mou_signature_empty(): void
+    {
+        $contract = $this->makeDraftContract();
+
+        $this->post(route('contracts.sign', $contract))->assertRedirect();
+
+        $contract->refresh();
+
+        $this->assertNull($contract->signature_path);
+        $this->assertSame('signed', $contract->status->value);
+        $this->get(route('contracts.signature', $contract))->assertNotFound();
+    }
+
+    public function test_a_signature_that_is_not_an_image_is_refused(): void
+    {
+        $contract = $this->makeDraftContract();
+
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->create('ttd.pdf', 100, 'application/pdf'),
+        ])->assertSessionHasErrors('signature');
+
+        $contract->refresh();
+
+        $this->assertNull($contract->signature_path);
+        $this->assertSame('draft', $contract->status->value);
+    }
+
+    public function test_signing_an_archived_mou_refreshes_the_pdf_with_the_signature(): void
+    {
+        $contract = $this->makeDraftContract();
+
+        $this->post(route('contracts.finalize', $contract))->assertRedirect();
+
+        $archived = $contract->fresh()->file_path;
+        $this->assertNotNull($archived);
+
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd-klien.png'),
+        ])->assertRedirect();
+
+        $contract->refresh();
+
+        Storage::disk('local')->assertExists((string) $contract->file_path);
+        $this->assertStringContainsString(
+            (string) $contract->signatureData(),
+            (string) $contract->renderedBody(),
+        );
+    }
+
+    private function makeDraftContract(): Contract
+    {
+        $contract = $this->makeContract();
+
+        $contract->forceFill(['status' => 'draft', 'signed_date' => null])->save();
+
+        return $contract->fresh();
     }
 
     /**

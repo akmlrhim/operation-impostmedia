@@ -1,16 +1,23 @@
 export type LeadFormData = {
   lead_stage_id: string;
+  date_in: string;
   company_name: string;
+  industry: string;
   contact_name: string;
   email: string;
   phone: string;
+  region: string;
   source: string;
+  pic: string;
+  pic_impost: string;
+  service_package_ids: number[];
   estimated_value: string;
-  expected_close_date: string;
-  priority: string;
-  owner_id: string;
+  last_contact_date: string;
+  next_action_date: string;
+  next_action: string;
+  temperature: string;
+  notes: string;
+  folder_url: string;
   status: string;
   lost_reason: string;
-  next_follow_up_at: string;
-  notes: string;
 };

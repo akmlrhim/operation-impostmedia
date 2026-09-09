@@ -7,7 +7,7 @@ export function useRowSelection<T extends { id: number }>(rows: T[]) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [trackedKey, setTrackedKey] = useState(idsKey);
 
-  // Row set changed (new page, new filters) — ids no longer on screen shouldn't stay selected.
+  // Row set changed (new page, new filters): ids no longer on screen shouldn't stay selected.
   if (trackedKey !== idsKey) {
     setTrackedKey(idsKey);
     setSelected(new Set());

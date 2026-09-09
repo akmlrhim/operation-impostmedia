@@ -4,15 +4,17 @@ import { StatusBadge } from '@/components/crm/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/format';
 import { show as showClient } from '@/routes/clients';
-import type { Contract, Option } from '@/types/crm';
+import type { CompanyIdentity, Contract, Option } from '@/types/crm';
 
 export function ContractShowSummaryCard({
   contract,
+  company,
   types,
   statuses,
   billingCycles,
 }: {
   contract: Contract;
+  company: CompanyIdentity;
   types: Option[];
   statuses: Option[];
   billingCycles: Option[];
@@ -30,9 +32,13 @@ export function ContractShowSummaryCard({
           {types.find((t) => t.value === contract.type)?.label ?? contract.type}
         </DetailRow>
         <DetailRow label="Klien">
-          <Link href={showClient(contract.client_id)} className="hover:underline">
-            {contract.client?.company_name}
-          </Link>
+          {contract.client_id === null ? (
+            <span className="text-muted-foreground">Tanpa klien</span>
+          ) : (
+            <Link href={showClient(contract.client_id)} className="hover:underline">
+              {contract.client?.company_name}
+            </Link>
+          )}
         </DetailRow>
         <DetailRow label="Periode">
           {formatDate(contract.start_date)} – {formatDate(contract.end_date)}
@@ -53,12 +59,10 @@ export function ContractShowSummaryCard({
           )}
         </DetailRow>
         <DetailRow label="Pihak Kedua">
-          {contract.second_party_name ?? contract.client?.contact_name ?? '-'}
-          {(contract.second_party_position ?? contract.client?.contact_position) && (
-            <span className="block text-xs text-muted-foreground">
-              {contract.second_party_position ?? contract.client?.contact_position}
-            </span>
-          )}
+          {company.signatory_name}
+          <span className="block text-xs text-muted-foreground">
+            {company.signatory_position} · {company.name}
+          </span>
         </DetailRow>
       </CardContent>
     </Card>

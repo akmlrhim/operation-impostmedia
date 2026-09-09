@@ -3,19 +3,18 @@ import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  // Bind ke localhost, bukan ::1. Alamat IPv6 literal tidak sah sebagai sumber
+  // Content-Security-Policy, jadi aset dev server akan diblokir browser.
+  server: {
+    host: 'localhost',
+  },
   plugins: [
     laravel({
       input: ['resources/css/app.css', 'resources/js/app.tsx'],
       refresh: true,
-      fonts: [
-        bunny('Inter', {
-          weights: [400, 500, 600, 700],
-        }),
-      ],
     }),
     inertia(),
     react({

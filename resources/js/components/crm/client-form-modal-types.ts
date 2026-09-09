@@ -7,9 +7,6 @@ export type ClientFormData = {
   city: string;
   contact_name: string;
   contact_position: string;
-  contact_email: string;
-  contact_phone: string;
   status: string;
-  account_manager_id: string;
   notes: string;
 };

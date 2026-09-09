@@ -3,6 +3,7 @@ import type { HTMLAttributes } from 'react';
 
 const FLIP_DURATION = 220;
 const FLIP_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
+const LANDING_SHADOW = '0 16px 32px -12px rgba(0,0,0,0.28), 0 4px 8px -4px rgba(0,0,0,0.12)';
 
 function prefersReducedMotion() {
   return (
@@ -10,10 +11,21 @@ function prefersReducedMotion() {
   );
 }
 
+function clearInlineMotion(el: HTMLElement) {
+  if (el.style.transition === '' && el.style.transform === '' && el.style.boxShadow === '') {
+    return;
+  }
+
+  el.style.transition = '';
+  el.style.transform = '';
+  el.style.boxShadow = '';
+}
+
 export function FlipBox({
   id,
   rects,
   disabled,
+  elevateOnMove,
   className,
   children,
   ...props
@@ -21,6 +33,7 @@ export function FlipBox({
   id: string;
   rects: React.MutableRefObject<Map<string, DOMRect>>;
   disabled?: boolean;
+  elevateOnMove?: boolean;
 } & HTMLAttributes<HTMLDivElement>) {
   const ref = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<() => void>(() => {});
@@ -40,8 +53,7 @@ export function FlipBox({
     rects.current.set(id, rect);
 
     if (!prev || disabled || prefersReducedMotion()) {
-      el.style.transition = '';
-      el.style.transform = '';
+      clearInlineMotion(el);
 
       return;
     }
@@ -55,23 +67,25 @@ export function FlipBox({
 
     el.style.transition = 'none';
     el.style.transform = `translate(${dx}px, ${dy}px)`;
+    el.style.boxShadow = elevateOnMove ? LANDING_SHADOW : '';
     el.getBoundingClientRect();
 
     const frame = requestAnimationFrame(() => {
-      el.style.transition = `transform ${FLIP_DURATION}ms ${FLIP_EASING}`;
+      el.style.transition = `transform ${FLIP_DURATION}ms ${FLIP_EASING}, box-shadow ${FLIP_DURATION}ms ${FLIP_EASING}`;
       el.style.transform = '';
+      el.style.boxShadow = '';
     });
 
     const clear = () => {
       el.style.transition = '';
+      el.style.boxShadow = '';
     };
     el.addEventListener('transitionend', clear, { once: true });
 
     cancelRef.current = () => {
       cancelAnimationFrame(frame);
       el.removeEventListener('transitionend', clear);
-      el.style.transition = '';
-      el.style.transform = '';
+      clearInlineMotion(el);
     };
   });
 

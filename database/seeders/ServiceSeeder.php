@@ -96,6 +96,39 @@ class ServiceSeeder extends Seeder
 
         $this->seedService(
             type: ServiceType::Brand,
+            name: 'Social Media Management',
+            description: 'Pengelolaan konten dan iklan media sosial berlangganan bulanan.',
+            packages: [
+                [
+                    'name' => 'Silver',
+                    'description' => 'Paket dasar pengelolaan media sosial.',
+                    'price' => 2500000,
+                    'unit' => 'bulan',
+                    'billing_type' => ServiceBillingType::MonthlyRetainer,
+                    'points' => [
+                        '8 konten per bulan',
+                        '1 kali sesi foto produk',
+                        'Laporan performa bulanan',
+                    ],
+                ],
+                [
+                    'name' => 'Gold',
+                    'description' => 'Paket lengkap dengan iklan berbayar.',
+                    'price' => 5000000,
+                    'unit' => 'bulan',
+                    'billing_type' => ServiceBillingType::MonthlyRetainer,
+                    'points' => [
+                        '16 konten per bulan',
+                        '2 kali sesi foto produk',
+                        'Pengelolaan iklan berbayar',
+                        'Laporan performa dua mingguan',
+                    ],
+                ],
+            ],
+        );
+
+        $this->seedService(
+            type: ServiceType::Brand,
             name: 'Pengelolaan Media Sosial',
             description: 'Manajemen konten dan performa media sosial brand.',
             packages: [

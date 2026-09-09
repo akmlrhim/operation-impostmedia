@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\Lead;
+use Carbon\CarbonInterface;
 
 class DashboardAttention
 {
@@ -62,7 +63,7 @@ class DashboardAttention
             $items[] = [
                 'kind' => 'invoice',
                 'id' => $invoice->id,
-                'title' => $invoice->client->company_name,
+                'title' => $invoice->client->company_name ?? 'Tanpa klien',
                 'subtitle' => $invoice->number,
                 'date' => $invoice->due_date->toDateString(),
                 'amount' => (float) $invoice->balance_due,
@@ -71,19 +72,19 @@ class DashboardAttention
         }
 
         $leads = Lead::query()
-            ->overdueFollowUp()
+            ->overdueNextAction()
             ->with('stage:id,name')
-            ->orderBy('next_follow_up_at')
+            ->orderBy('next_action_date')
             ->limit(6)
-            ->get(['id', 'company_name', 'lead_stage_id', 'next_follow_up_at']);
+            ->get(['id', 'company_name', 'lead_stage_id', 'next_action', 'next_action_date']);
 
         foreach ($leads as $lead) {
             $items[] = [
                 'kind' => 'lead',
                 'id' => $lead->id,
                 'title' => $lead->company_name,
-                'subtitle' => 'Follow up · '.$lead->stage->name,
-                'date' => $lead->next_follow_up_at->toDateString(),
+                'subtitle' => ($lead->next_action ?: 'Follow up').' · '.($lead->stage->name ?? 'Tanpa kolom'),
+                'date' => $lead->next_action_date->toDateString(),
                 'amount' => null,
                 'severity' => 'serious',
             ];
@@ -100,7 +101,7 @@ class DashboardAttention
             $items[] = [
                 'kind' => 'contract',
                 'id' => $contract->id,
-                'title' => $contract->client->company_name,
+                'title' => $contract->client->company_name ?? 'Tanpa klien',
                 'subtitle' => $contract->title,
                 'date' => $contract->end_date->toDateString(),
                 'amount' => null,
@@ -116,10 +117,11 @@ class DashboardAttention
     /**
      * @return list<array{id: int, type: string, title: string, subject: string|null, user: string|null, at: string|null}>
      */
-    public static function activities(): array
+    public static function activities(CarbonInterface $monthStart): array
     {
         $latest = Activity::query()
             ->with(['user:id,name', 'subject'])
+            ->whereBetween('created_at', [$monthStart, $monthStart->copy()->endOfMonth()])
             ->latest()
             ->limit(6)
             ->get();

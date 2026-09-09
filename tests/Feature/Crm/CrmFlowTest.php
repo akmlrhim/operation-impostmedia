@@ -3,6 +3,7 @@
 namespace Tests\Feature\Crm;
 
 use App\Actions\Crm\ArchiveDocumentPdf;
+use App\Actions\Crm\RenderContractDocument;
 use App\Enums\ContractStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\LeadSource;
@@ -47,7 +48,6 @@ class CrmFlowTest extends TestCase
             'company_name' => 'PT Kopi Nusantara',
             'contact_name' => 'Dewi Lestari',
             'estimated_value' => 96_000_000,
-            'priority' => 'high',
             'status' => 'open',
         ])->assertRedirect();
 
@@ -67,7 +67,6 @@ class CrmFlowTest extends TestCase
             'company_name' => 'PT Kopi Nusantara',
             'contact_name' => 'Dewi Lestari',
             'estimated_value' => 96_000_000,
-            'priority' => 'high',
             'status' => 'open',
         ];
 
@@ -181,7 +180,6 @@ class CrmFlowTest extends TestCase
         $this->assertSame('PT Konversi', $client->company_name);
         $this->assertSame($client->id, $lead->converted_client_id);
         $this->assertSame(LeadStatus::Won, $lead->status);
-        $this->assertNotNull($lead->converted_at);
     }
 
     public function test_redirect_after_converting_a_lead_does_not_force_open_any_modal(): void
@@ -207,6 +205,86 @@ class CrmFlowTest extends TestCase
                 ->component('invoices/create')
                 ->where('clientId', $client->id)
                 ->has('suggestedNumber'));
+    }
+
+    /**
+     * Diskon MoU boleh tidak diisi sama sekali, persis seperti PPN: kalau nol,
+     * barisnya tidak muncul di dokumen dan nilainya tidak berubah.
+     */
+    public function test_a_mou_discount_is_optional_and_cuts_the_value_before_ppn(): void
+    {
+        $client = $this->makeClient();
+        $package = $this->makeServicePackage();
+
+        $attributes = [
+            'client_id' => $client->id,
+            'type' => 'mou',
+            'title' => 'Pengelolaan Social Media',
+            'tax_percent' => 11,
+            'billing_cycle' => 'one_time',
+            'signed_date' => '2026-05-16',
+            'status' => 'signed',
+            'items' => [[
+                'service_package_id' => $package->id,
+                'name' => $package->name,
+                'quantity' => 1,
+                'unit' => 'paket',
+                'unit_price' => 10_000_000,
+            ]],
+        ];
+
+        $this->post(route('contracts.store'), $attributes)->assertRedirect();
+
+        $plain = Contract::firstOrFail();
+
+        $this->assertSame('0.00', $plain->discount_amount);
+        $this->assertSame('11100000.00', $plain->value);
+
+        $this->put(route('contracts.update', $plain), [...$attributes, 'discount_amount' => 2_000_000])
+            ->assertRedirect();
+
+        $discounted = $plain->fresh();
+
+        $this->assertSame('10000000.00', $discounted->subtotal, 'Subtotal tetap harga penuh.');
+        $this->assertSame('2000000.00', $discounted->discount_amount);
+        $this->assertSame('880000.00', $discounted->tax_amount, 'PPN dihitung setelah dipotong diskon.');
+        $this->assertSame('8880000.00', $discounted->value);
+    }
+
+    public function test_a_mou_discount_reaches_the_printed_document_only_when_it_is_used(): void
+    {
+        $contract = Contract::firstOrCreate(
+            ['number' => 'IM-MOU-0516-PRJ-777'],
+            [
+                'client_id' => $this->makeClient()->id,
+                'type' => 'mou',
+                'title' => 'Pengelolaan Social Media',
+                'tax_percent' => 11,
+                'billing_cycle' => 'one_time',
+                'signed_date' => '2026-05-16',
+                'status' => 'signed',
+            ],
+        );
+
+        $contract->items()->create([
+            'name' => 'Paket', 'quantity' => 1, 'unit' => 'paket',
+            'unit_price' => 10_000_000, 'amount' => 10_000_000, 'position' => 0,
+        ]);
+        $contract->recalculate();
+
+        $this->assertStringNotContainsString(
+            'Diskon',
+            app(RenderContractDocument::class)->handle($contract->fresh(), persist: false),
+            'Diskon nol tidak boleh menyisakan baris kosong di MoU.',
+        );
+
+        $contract->update(['discount_amount' => 2_000_000]);
+        $contract->recalculate();
+
+        $html = app(RenderContractDocument::class)->handle($contract->fresh(), persist: false);
+
+        $this->assertStringContainsString('Diskon', $html);
+        $this->assertStringContainsString('-Rp2.000.000', $html);
     }
 
     public function test_contract_totals_are_calculated_from_its_line_items(): void
@@ -264,6 +342,66 @@ class CrmFlowTest extends TestCase
         $this->post(route('contracts.invoice', $contract))->assertRedirect();
 
         $this->assertSame(0, Invoice::count());
+    }
+
+    public function test_non_recurring_mou_can_only_be_invoiced_once(): void
+    {
+        $contract = $this->makeSignedContract();
+        $contract->update(['billing_cycle' => 'one_time']);
+
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+        $this->assertSame(1, Invoice::count());
+
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+        $this->assertSame(1, Invoice::count());
+    }
+
+    public function test_mou_detail_says_when_an_invoice_can_be_issued(): void
+    {
+        $contract = $this->makeSignedContract();
+
+        $this->get(route('contracts.show', $contract))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('invoiceBlocker', null));
+
+        $contract->update(['status' => ContractStatus::Draft]);
+
+        $this->get(route('contracts.show', $contract))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('invoiceBlocker', 'MoU harus ditandatangani dulu sebelum bisa diterbitkan invoice.'));
+    }
+
+    public function test_a_one_time_mou_can_be_invoiced_again_after_its_invoice_is_deleted(): void
+    {
+        $contract = $this->makeSignedContract();
+        $contract->update(['billing_cycle' => 'one_time']);
+
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+        $first = Invoice::firstOrFail();
+
+        $this->get(route('contracts.show', $contract))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('invoiceBlocker', 'MoU sekali bayar hanya boleh punya satu invoice. Hapus invoice lamanya kalau mau menerbitkan ulang.'));
+
+        $this->delete(route('invoices.destroy', $first))->assertRedirect();
+
+        $this->get(route('contracts.show', $contract))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('invoiceBlocker', null));
+
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+
+        $this->assertSame(1, Invoice::count());
+        $this->assertNotSame($first->number, Invoice::firstOrFail()->number);
+    }
+
+    public function test_recurring_mou_can_be_invoiced_every_period(): void
+    {
+        $contract = $this->makeSignedContract();
+
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+        $this->post(route('contracts.invoice', $contract))->assertRedirect();
+
+        $this->assertSame(2, Invoice::count());
     }
 
     public function test_a_retainer_invoice_without_a_mou_is_rejected(): void
@@ -334,6 +472,26 @@ class CrmFlowTest extends TestCase
         $this->assertSame('8880000.00', $invoice->balance_due);
     }
 
+    /**
+     * Halaman invoice memuat 'payments.recorder', dan relasi bersarang begitu
+     * baru benar-benar di-resolve kalau pembayarannya ada. Tanpa satu pembayaran
+     * di sini, relasi yang hilang lolos dari tes dan baru meledak di browser.
+     */
+    public function test_the_invoice_page_still_opens_after_a_payment_is_recorded(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('payments.store', $invoice), [
+            'amount' => 1_000_000,
+            'paid_at' => '2026-01-10',
+            'method' => 'transfer',
+        ])->assertRedirect();
+
+        $this->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('invoice.payments', 1));
+    }
+
     public function test_recording_payments_moves_the_invoice_through_partial_then_paid(): void
     {
         $invoice = $this->makeSentInvoice();
@@ -358,6 +516,101 @@ class CrmFlowTest extends TestCase
         $this->assertSame(InvoiceStatus::Paid, $invoice->status);
         $this->assertSame('0.00', $invoice->balance_due);
         $this->assertNotNull($invoice->paid_at);
+    }
+
+    public function test_draft_mou_can_be_signed_in_one_action(): void
+    {
+        $contract = Contract::create([
+            'number' => 'MOU/ACC',
+            'client_id' => $this->makeClient()->id,
+            'type' => 'mou',
+            'title' => 'MoU menunggu tanda tangan',
+            'tax_percent' => 0,
+            'billing_cycle' => 'one_time',
+            'status' => ContractStatus::Draft,
+        ]);
+
+        $this->post(route('contracts.sign', $contract))->assertRedirect();
+
+        $contract->refresh();
+        $this->assertSame(ContractStatus::Signed, $contract->status);
+        $this->assertSame(now()->toDateString(), $contract->signed_date->toDateString());
+        $this->assertTrue($contract->canIssueInvoice());
+    }
+
+    public function test_signing_keeps_the_date_the_number_was_built_from(): void
+    {
+        $contract = Contract::create([
+            'number' => 'MOU/ACC2',
+            'client_id' => $this->makeClient()->id,
+            'type' => 'mou',
+            'title' => 'MoU sudah dikirim',
+            'tax_percent' => 0,
+            'billing_cycle' => 'one_time',
+            'status' => ContractStatus::Sent,
+            'signed_date' => '2026-01-05',
+        ]);
+
+        $this->post(route('contracts.sign', $contract))->assertRedirect();
+
+        $contract->refresh();
+        $this->assertSame(ContractStatus::Signed, $contract->status);
+        $this->assertSame('2026-01-05', $contract->signed_date->toDateString());
+    }
+
+    public function test_a_mou_past_the_signing_stage_is_left_alone(): void
+    {
+        $contract = Contract::create([
+            'number' => 'MOU/ACC3',
+            'client_id' => $this->makeClient()->id,
+            'type' => 'mou',
+            'title' => 'MoU selesai',
+            'tax_percent' => 0,
+            'billing_cycle' => 'one_time',
+            'status' => ContractStatus::Completed,
+            'signed_date' => '2026-01-05',
+        ]);
+
+        $this->post(route('contracts.sign', $contract))->assertRedirect();
+
+        $this->assertSame(ContractStatus::Completed, $contract->fresh()->status);
+    }
+
+    public function test_settling_an_invoice_records_the_remaining_balance_as_one_payment(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('payments.store', $invoice), [
+            'amount' => 5_000_000,
+            'paid_at' => '2026-01-10',
+            'method' => 'transfer',
+        ])->assertRedirect();
+
+        $this->post(route('invoices.settle', $invoice))->assertRedirect();
+
+        $invoice->refresh();
+        $this->assertSame(InvoiceStatus::Paid, $invoice->status);
+        $this->assertSame('0.00', $invoice->balance_due);
+        $this->assertNotNull($invoice->paid_at);
+        $this->assertSame(2, $invoice->payments()->count());
+        $this->assertSame('3880000.00', $invoice->payments()->reorder('id', 'desc')->firstOrFail()->amount);
+    }
+
+    public function test_settling_is_refused_when_there_is_nothing_left_to_pay(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('invoices.settle', $invoice))->assertRedirect();
+        $this->post(route('invoices.settle', $invoice))->assertRedirect();
+
+        $this->assertSame(1, $invoice->payments()->count());
+
+        $draft = $this->makeDraftInvoice();
+
+        $this->post(route('invoices.settle', $draft))->assertRedirect();
+
+        $this->assertSame(0, $draft->payments()->count());
+        $this->assertSame(InvoiceStatus::Draft, $draft->fresh()->status);
     }
 
     public function test_sent_invoice_cannot_be_edited(): void
@@ -399,14 +652,12 @@ class CrmFlowTest extends TestCase
 
         $this->post(route('contracts.finalize', $contract))->assertRedirect();
 
-        $body = (string) $contract->fresh()->body;
+        $body = (string) $contract->renderedBody();
 
         $this->assertStringContainsString('RUANG LINGKUP KERJASAMA', $body);
         $this->assertStringContainsString('Pihak Pertama', $body);
         $this->assertStringContainsString('Pihak Kedua', $body);
         $this->assertStringContainsString('Rp96.000.000', $body);
-
-        $this->get(route('contracts.print', $contract))->assertOk();
     }
 
     public function test_invoice_pdf_is_rendered_fresh_on_every_download(): void
@@ -448,25 +699,30 @@ class CrmFlowTest extends TestCase
         $this->assertNull($stage->fresh());
     }
 
-    public function test_kanban_column_holding_leads_cannot_be_removed(): void
+    public function test_kanban_column_holding_leads_can_still_be_removed(): void
     {
-        $stage = LeadStage::where('slug', 'prospek-baru')->firstOrFail();
-        $this->makeLead($stage, 'PT Tetap Ada');
+        $stage = LeadStage::query()->orderBy('position')->firstOrFail();
+        $next = LeadStage::query()->whereKeyNot($stage->id)->orderBy('position')->firstOrFail();
+        $lead = $this->makeLead($stage, 'PT Tetap Ada');
 
         $this->delete(route('lead-stages.destroy', $stage))->assertRedirect();
 
-        $this->assertNotNull($stage->fresh());
+        $this->assertNull($stage->fresh());
+        $this->assertSame($next->id, $lead->fresh()->lead_stage_id);
     }
 
-    public function test_service_used_in_a_document_is_deactivated_rather_than_deleted(): void
+    public function test_service_used_in_a_document_can_still_be_deleted(): void
     {
         $contract = $this->makeSignedContract();
-        $service = $contract->items()->firstOrFail()->servicePackage->service;
+        $item = $contract->items()->firstOrFail();
+        $service = $item->servicePackage->service;
 
         $this->delete(route('services.destroy', $service))->assertRedirect();
 
-        $this->assertFalse($service->fresh()->is_active);
-        $this->assertNotNull($service->fresh());
+        $this->assertNull($service->fresh());
+        $this->assertNotNull($item->fresh());
+        $this->assertNull($item->fresh()->service_package_id);
+        $this->assertSame($item->name, $item->fresh()->name);
     }
 
     public function test_service_is_saved_together_with_its_packages_and_points(): void
@@ -497,12 +753,14 @@ class CrmFlowTest extends TestCase
 
         $service = Service::where('name', 'Foto Produk')->firstOrFail();
 
+        $packages = $service->packages()->with('points')->get();
+
         $this->assertSame(ServiceType::Umkm, $service->type);
-        $this->assertCount(2, $service->packages);
-        $this->assertSame(['Basic', 'Pro'], $service->packages->pluck('name')->all());
+        $this->assertCount(2, $packages);
+        $this->assertSame(['Basic', 'Pro'], $packages->pluck('name')->all());
         $this->assertSame(
             ['10 Foto Produk', 'Edit Warna'],
-            $service->packages->firstOrFail()->points->pluck('label')->all(),
+            $packages->firstOrFail()->points->pluck('label')->all(),
         );
     }
 
@@ -588,12 +846,14 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('contracts.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('contracts/index')
-            ->has('contracts.data', 1)
+            ->has('groups.data', 1)
+            ->has('groups.data.0.contracts', 1)
             ->missing('clients'));
 
         $this->get(route('invoices.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('invoices/index')
-            ->has('invoices.data', 1)
+            ->has('groups.data', 1)
+            ->has('groups.data.0.invoices', 1)
             ->has('summary')
             ->missing('clients'));
     }
@@ -604,25 +864,25 @@ class CrmFlowTest extends TestCase
         $invoice = $this->makeSentInvoice();
 
         $this->get(route('contracts.index', ['status' => ContractStatus::Signed->value]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('contracts.data', 1));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data.0.contracts', 1));
 
         $this->get(route('contracts.index', ['status' => ContractStatus::Draft->value]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('contracts.data', 0));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data', 0));
 
         $this->get(route('invoices.index', ['status' => InvoiceStatus::Sent->value]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('invoices.data', 1));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data.0.invoices', 1));
 
         $this->get(route('invoices.index', ['status' => InvoiceStatus::Paid->value]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('invoices.data', 0));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data', 0));
 
         $this->get(route('contracts.index', ['filter_client' => $contract->client_id]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('contracts.data', 1));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data.0.contracts', 1));
 
         $this->get(route('invoices.index', ['filter_client' => $invoice->client_id]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('invoices.data', 1));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data.0.invoices', 1));
 
         $this->get(route('contracts.index', ['filter_client' => $invoice->client_id]))
-            ->assertInertia(fn (AssertableInertia $page) => $page->has('contracts.data', 0));
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('groups.data', 0));
     }
 
     public function test_list_pages_send_the_counts_the_row_actions_rely_on(): void
@@ -635,11 +895,11 @@ class CrmFlowTest extends TestCase
             ->etc());
 
         $this->get(route('contracts.index'))->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('contracts.data.0.invoices_count', 1)
+            ->where('groups.data.0.contracts.0.invoices_count', 1)
             ->etc());
 
         $this->get(route('invoices.index'))->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('invoices.data.0.payments_count', 0)
+            ->where('groups.data.0.invoices.0.payments_count', 0)
             ->etc());
     }
 
@@ -696,7 +956,7 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('contracts.index', ['filter_client' => $clientId]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('contracts.data', 0)
+                ->has('groups.data', 0)
                 ->where('filters.filterClient', $clientId)
                 ->has('filterClients', 1)
                 ->where('filterClients.0.id', $clientId));
@@ -781,14 +1041,15 @@ class CrmFlowTest extends TestCase
         $draftInvoice = $this->makeDraftInvoice();
 
         $this->get(route('leads.index'))->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('users')->has('sources')->has('statuses')->has('stageTypes'));
+            ->has('sources')->has('statuses')->has('stageTypes')
+            ->has('temperatures')->has('services'));
 
         $this->get(route('clients.index'))->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('users'));
+            ->has('filterClients')->has('statuses'));
 
         $this->get(route('clients.show', $client))->assertInertia(fn (AssertableInertia $page) => $page
             ->component('clients/show')
-            ->has('users'));
+            ->has('statuses'));
 
         $this->get(route('services.index'))->assertInertia(fn (AssertableInertia $page) => $page
             ->has('types')->has('billingTypes'));
@@ -848,8 +1109,8 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('contracts.index', ['filter_client' => $first->client_id]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('contracts.data', 1)
-                ->where('contracts.data.0.id', $first->id));
+                ->has('groups.data', 1)
+                ->where('groups.data.0.contracts.0.id', $first->id));
 
         $this->get(route('contracts.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page->has('filterClients', 2));
@@ -895,13 +1156,13 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('contracts.index', ['sort' => 'value', 'direction' => 'asc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('contracts.data.0.title', 'Kontrak murah')
-                ->where('contracts.data.1.title', 'Kontrak mahal'));
+                ->where('groups.data.0.contracts.0.title', 'Kontrak murah')
+                ->where('groups.data.0.contracts.1.title', 'Kontrak mahal'));
 
         $this->get(route('contracts.index', ['sort' => 'value', 'direction' => 'desc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('contracts.data.0.title', 'Kontrak mahal')
-                ->where('contracts.data.1.title', 'Kontrak murah'));
+                ->where('groups.data.0.contracts.0.title', 'Kontrak mahal')
+                ->where('groups.data.0.contracts.1.title', 'Kontrak murah'));
     }
 
     public function test_invoices_list_can_be_filtered_by_client(): void
@@ -911,8 +1172,8 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('invoices.index', ['filter_client' => $first->client_id]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('invoices.data', 1)
-                ->where('invoices.data.0.id', $first->id));
+                ->has('groups.data', 1)
+                ->where('groups.data.0.invoices.0.id', $first->id));
 
         $this->get(route('invoices.index'))
             ->assertInertia(fn (AssertableInertia $page) => $page->has('filterClients', 2));
@@ -958,13 +1219,13 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('invoices.index', ['sort' => 'total', 'direction' => 'asc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('invoices.data.0.number', 'INV/CHEAP')
-                ->where('invoices.data.1.number', 'INV/MAHAL'));
+                ->where('groups.data.0.invoices.0.number', 'INV/CHEAP')
+                ->where('groups.data.0.invoices.1.number', 'INV/MAHAL'));
 
         $this->get(route('invoices.index', ['sort' => 'total', 'direction' => 'desc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('invoices.data.0.number', 'INV/MAHAL')
-                ->where('invoices.data.1.number', 'INV/CHEAP'));
+                ->where('groups.data.0.invoices.0.number', 'INV/MAHAL')
+                ->where('groups.data.0.invoices.1.number', 'INV/CHEAP'));
     }
 
     public function test_client_tab_can_be_sorted_by_company_name(): void

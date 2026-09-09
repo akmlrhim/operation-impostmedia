@@ -62,18 +62,6 @@ class ServiceController extends Controller
 
     public function destroy(Service $service): RedirectResponse
     {
-        if ($service->contractItems()->exists() || $service->invoiceItems()->exists()) {
-            $service->update(['is_active' => false]);
-            $service->packages()->update(['is_active' => false]);
-
-            Inertia::flash('toast', [
-                'type' => 'success',
-                'message' => 'Layanan sudah dipakai di dokumen, jadi dinonaktifkan saja.',
-            ]);
-
-            return back();
-        }
-
         $service->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Layanan dihapus.']);

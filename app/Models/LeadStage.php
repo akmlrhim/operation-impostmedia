@@ -30,6 +30,24 @@ class LeadStage extends Model
         ];
     }
 
+    /**
+     * Kolom boleh dihapus walau masih berisi kartu; leadnya pindah ke kolom
+     * paling kiri yang tersisa, dan hanya jadi tanpa kolom kalau papan habis.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (LeadStage $stage): void {
+            $fallback = static::query()
+                ->whereKeyNot($stage->getKey())
+                ->orderBy('position')
+                ->first();
+
+            Lead::withTrashed()
+                ->where('lead_stage_id', $stage->getKey())
+                ->update(['lead_stage_id' => $fallback?->getKey()]);
+        });
+    }
+
     /** @return HasMany<Lead, $this> */
     public function leads(): HasMany
     {

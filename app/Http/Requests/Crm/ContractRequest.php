@@ -10,6 +10,13 @@ use Illuminate\Validation\Rule;
 
 class ContractRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'discount_amount' => $this->input('discount_amount') ?: 0,
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -26,19 +33,16 @@ class ContractRequest extends FormRequest
             'lead_id' => ['nullable', 'exists:leads,id'],
             'type' => ['required', Rule::enum(ContractType::class)],
             'title' => ['required', 'string', 'max:255'],
-            'scope' => ['nullable', 'string'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'signing_place' => ['nullable', 'string', 'max:100'],
             'signed_date' => ['required', 'date'],
+            'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'payment_terms' => ['nullable', 'string'],
             'billing_cycle' => ['required', Rule::enum(BillingCycle::class)],
             'next_invoice_date' => ['nullable', 'date'],
             'first_party_name' => ['nullable', 'string', 'max:255'],
             'first_party_position' => ['nullable', 'string', 'max:255'],
-            'second_party_name' => ['nullable', 'string', 'max:255'],
-            'second_party_position' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::enum(ContractStatus::class)],
 
             'items' => ['required', 'array', 'min:1'],

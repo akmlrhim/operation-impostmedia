@@ -14,10 +14,6 @@
     <meta charset="utf-8">
     <title>{{ $title }}</title>
 
-    @if ($printable ?? true)
-        @fonts
-    @endif
-
     <style>
         @if (! $selfStyled)
             @page { size: A4; margin: 20mm 18mm; }
@@ -35,19 +31,9 @@
             @page { size: A4; }
             body { margin: 0; }
         @endif
-
-        .toolbar { margin-bottom: 16px; text-align: right; }
-        .toolbar button { padding: 8px 16px; font-size: 10pt; cursor: pointer; }
-        @media print { .toolbar { display: none; } }
     </style>
 </head>
 <body>
-@if ($printable ?? true)
-    <div class="toolbar">
-        <button type="button" onclick="window.print()">Cetak / Simpan PDF</button>
-    </div>
-@endif
-
     {!! $body !!}
 </body>
 </html>

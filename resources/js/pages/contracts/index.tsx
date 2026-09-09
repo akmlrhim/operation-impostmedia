@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { useRealtime } from '@/hooks/use-realtime';
 import { create, index } from '@/routes/contracts';
-import type { Client, Contract, Option, Paginated } from '@/types/crm';
+import type { Client, ContractGroup, Option, Paginated } from '@/types/crm';
 
 type Filters = {
   filterClient: number | null;
@@ -24,14 +24,21 @@ type Filters = {
 };
 
 type Props = {
-  contracts: Paginated<Contract>;
+  groups: Paginated<ContractGroup>;
+  orphans: ContractGroup | null;
   filters: Filters;
   statuses: Option[];
   filterClients: Pick<Client, 'id' | 'company_name'>[];
 };
 
-export default function ContractsIndex({ contracts, filters, statuses, filterClients }: Props) {
-  useRealtime(['contracts'], ['contracts']);
+export default function ContractsIndex({
+  groups,
+  orphans,
+  filters,
+  statuses,
+  filterClients,
+}: Props) {
+  useRealtime(['contracts'], ['groups', 'orphans']);
 
   function applyFilters(next: Partial<Filters>) {
     const merged = { ...filters, ...next };
@@ -98,14 +105,14 @@ export default function ContractsIndex({ contracts, filters, statuses, filterCli
         </div>
 
         <ContractTable
-          contracts={contracts.data}
+          groups={orphans ? [orphans, ...groups.data] : groups.data}
           statuses={statuses}
           sort={filters.sort}
           direction={filters.direction}
           onSort={toggleSort}
         />
 
-        <Pagination meta={contracts} />
+        <Pagination meta={groups} />
       </div>
     </>
   );
