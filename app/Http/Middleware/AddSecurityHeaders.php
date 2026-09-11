@@ -97,9 +97,11 @@ class AddSecurityHeaders
 
     /**
      * Origin Vite dev server, dinormalkan supaya sah sebagai sumber CSP.
-     * Tata bahasa host-source tidak mengenal alamat IPv6 literal seperti
-     * `http://[::1]:5173`; browser membuang seluruh sumbernya dan aset dev
-     * ikut terblokir. Loopback apa pun karena itu ditulis sebagai `localhost`.
+     * Browser membandingkan CSP dengan URL yang benar-benar di-fetch, jadi
+     * host-nya harus sama persis. `127.0.0.1` dipakai apa adanya (IPv4 literal
+     * sah sebagai host-source), sedangkan `::1` ditulis `localhost` karena
+     * tata bahasa host-source tidak mengenal alamat IPv6 literal — kalau lewat
+     * begitu saja, browser membuang seluruh direktifnya dan aset dev diblokir.
      */
     private function devServer(): ?string
     {
@@ -117,7 +119,7 @@ class AddSecurityHeaders
         $host = trim($parts['host'], '[]');
         $port = isset($parts['port']) ? ':'.$parts['port'] : '';
 
-        if (in_array($host, ['::1', '127.0.0.1', '0.0.0.0', 'localhost'], true)) {
+        if ($host === '::1' || $host === '0.0.0.0') {
             return $parts['scheme'].'://localhost'.$port;
         }
 

@@ -64,6 +64,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 65002
+          timeout: 60s
+          command_timeout: 60m
           script: |
             set -e
             APP=/home/u465920647/domains/impostmedia.com/public_html/ops.impostmedia.com

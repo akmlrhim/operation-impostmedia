@@ -6,10 +6,11 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Bind ke localhost, bukan ::1. Alamat IPv6 literal tidak sah sebagai sumber
-  // Content-Security-Policy, jadi aset dev server akan diblokir browser.
+  // Bind ke IPv4 127.0.0.1 secara eksplisit. Node di Windows me-resolve
+  // 'localhost' ke ::1 terlebih dahulu, dan alamat IPv6 literal tidak sah
+  // sebagai sumber Content-Security-Policy sehingga aset dev server diblokir.
   server: {
-    host: 'localhost',
+    host: '127.0.0.1',
   },
   plugins: [
     laravel({

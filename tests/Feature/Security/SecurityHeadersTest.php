@@ -110,6 +110,28 @@ class SecurityHeadersTest extends TestCase
     }
 
     /**
+     * Vite dibiarkan `http://127.0.0.1:5173` apa adanya — browser mem-bandingkan
+     * CSP dengan URL yang di-fetch, jadi host harus persis, bukan `localhost`.
+     * IPv4 literal sah sebagai host-source CSP.
+     */
+    public function test_an_ipv4_vite_host_is_kept_as_is(): void
+    {
+        $hot = public_path('hot');
+        $original = file_exists($hot) ? file_get_contents($hot) : null;
+
+        try {
+            file_put_contents($hot, 'http://127.0.0.1:5173');
+
+            $policy = (string) $this->get(route('login'))->headers->get('Content-Security-Policy');
+
+            $this->assertStringContainsString('http://127.0.0.1:5173', $policy);
+            $this->assertStringContainsString('ws://127.0.0.1:5173', $policy);
+        } finally {
+            $original === null ? @unlink($hot) : file_put_contents($hot, $original);
+        }
+    }
+
+    /**
      * Noto Sans dimuat dari Google Fonts. Kalau kedua host ini lepas dari CSP,
      * font diblokir tanpa pesan apa pun dan halaman jatuh ke font sistem.
      */
