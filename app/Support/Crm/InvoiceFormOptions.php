@@ -31,6 +31,7 @@ class InvoiceFormOptions
             'services' => Service::pickable(),
             'company' => CompanyProfile::all(),
             'types' => EnumOptions::from(InvoiceType::class),
+            'users' => UserOptions::assignable(),
         ];
     }
 }

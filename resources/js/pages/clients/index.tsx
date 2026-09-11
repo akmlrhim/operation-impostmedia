@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { ClientCombobox } from '@/components/crm/client-combobox';
 import { ClientFormModal } from '@/components/crm/client-form-modal';
 import { ClientTable } from '@/components/crm/clients/client-table';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { Pagination } from '@/components/crm/pagination';
+import { Toolbar } from '@/components/crm/toolbar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -16,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useRealtime } from '@/hooks/use-realtime';
 import { index } from '@/routes/clients';
-import type { Client, Option, Paginated } from '@/types/crm';
+import type { Client, Option, Paginated, UserOption } from '@/types/crm';
 
 type Filters = {
   status: string;
@@ -29,10 +31,11 @@ type Props = {
   clients: Paginated<Client>;
   filters: Filters;
   statuses: Option[];
+  users: UserOption[];
   filterClients: Pick<Client, 'id' | 'company_name'>[];
 };
 
-export default function ClientsIndex({ clients, filters, statuses, filterClients }: Props) {
+export default function ClientsIndex({ clients, filters, statuses, users, filterClients }: Props) {
   useRealtime(['clients', 'contracts', 'invoices'], ['clients']);
 
   const [clientModal, setClientModal] = useState<{ client?: Client } | null>(null);
@@ -63,18 +66,18 @@ export default function ClientsIndex({ clients, filters, statuses, filterClients
     <>
       <Head title="Klien" />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title="Klien"
-          actions={
-            <Button onClick={() => setClientModal({})}>
-              <Plus className="size-4" />
-              Klien baru
-            </Button>
-          }
-        />
+      <PageHeader
+        title="Klien"
+        actions={
+          <Button onClick={() => setClientModal({})}>
+            <Plus className="size-4" />
+            Klien baru
+          </Button>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
+      <PageBody>
+        <Toolbar trailing={`${clients.total} klien`}>
           <ClientCombobox
             clients={filterClients}
             value={filters.filterClient}
@@ -85,7 +88,7 @@ export default function ClientsIndex({ clients, filters, statuses, filterClients
             value={filters.status || 'all'}
             onValueChange={(value) => applyFilters({ status: value === 'all' ? '' : value })}
           >
-            <SelectTrigger className="w-full sm:w-52">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Semua status" />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +100,7 @@ export default function ClientsIndex({ clients, filters, statuses, filterClients
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </Toolbar>
 
         <ClientTable
           clients={clients.data}
@@ -109,12 +112,13 @@ export default function ClientsIndex({ clients, filters, statuses, filterClients
         />
 
         <Pagination meta={clients} />
-      </div>
+      </PageBody>
 
       {clientModal && (
         <ClientFormModal
           client={clientModal.client}
           statuses={statuses}
+          users={users}
           onClose={() => setClientModal(null)}
         />
       )}

@@ -29,6 +29,7 @@ use App\Support\BulkDeleteSummary;
 use App\Support\CompanyProfile;
 use App\Support\Crm\ContractFormOptions;
 use App\Support\Crm\ContractIndexQuery;
+use App\Support\Crm\Notifier;
 use App\Support\Csv\CsvExport;
 use App\Support\Documents\HtmlSanitizer;
 use App\Support\DownloadName;
@@ -75,7 +76,7 @@ class ContractController extends Controller
     {
         $contract->load([
             'client', 'items.servicePackage:id,name', 'invoices', 'lead:id,company_name',
-            'attachments.uploader:id,name',
+            'attachments.uploader:id,name', 'assignees:id,name',
         ]);
 
         return Inertia::render('contracts/show', [
@@ -215,6 +216,8 @@ class ContractController extends Controller
         $data = $request->validated();
         $items = $data['items'];
         unset($data['items']);
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         $date = Carbon::parse($data['signed_date']);
 
@@ -238,6 +241,9 @@ class ContractController extends Controller
             return $contract;
         });
 
+        $contract->assignees()->sync($assignedToIds);
+        $contract->notifyNewAssignees();
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "MoU {$contract->number} dibuat."]);
 
         return to_route('contracts.show', $contract);
@@ -248,6 +254,8 @@ class ContractController extends Controller
         $data = $request->validated();
         $items = $data['items'];
         unset($data['items']);
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         DB::transaction(function () use ($contract, $data, $items): void {
             $contract->update($data);
@@ -255,6 +263,9 @@ class ContractController extends Controller
             $this->syncItems($contract, $items);
             $contract->recalculate();
         });
+
+        $contract->assignees()->sync($assignedToIds);
+        $contract->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'MoU diperbarui.']);
 
@@ -289,6 +300,14 @@ class ContractController extends Controller
             $renderer->handle($contract);
             $archiver->forContract($contract, $renderer);
         }
+
+        Notifier::involved(
+            $contract,
+            'contract',
+            $contract->number,
+            'MoU sudah ditandatangani',
+            route('contracts.show', $contract),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'MoU ditandai sudah ditandatangani.']);
 

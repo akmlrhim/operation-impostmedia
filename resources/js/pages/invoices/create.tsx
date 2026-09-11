@@ -1,8 +1,16 @@
 import { Head } from '@inertiajs/react';
 import { InvoiceForm } from '@/components/crm/invoice-form';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { create, index } from '@/routes/invoices';
-import type { Client, CompanyProfile, ContractOption, Option, ServiceOption } from '@/types/crm';
+import type {
+  Client,
+  CompanyProfile,
+  ContractOption,
+  Option,
+  ServiceOption,
+  UserOption,
+} from '@/types/crm';
 
 type Props = {
   clientId: number | null;
@@ -13,6 +21,7 @@ type Props = {
   company: CompanyProfile;
   types: Option[];
   statuses: Option[];
+  users: UserOption[];
 };
 
 export default function InvoiceCreate({
@@ -24,14 +33,15 @@ export default function InvoiceCreate({
   company,
   types,
   statuses,
+  users,
 }: Props) {
   return (
     <>
       <Head title="Buat invoice" />
 
-      <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
-        <PageHeader title="Buat invoice" backHref={index().url} />
+      <PageHeader title="Buat invoice" backHref={index().url} />
 
+      <PageBody className="mx-auto w-full max-w-5xl">
         <InvoiceForm
           clientId={clientId}
           suggestedNumber={suggestedNumber}
@@ -41,9 +51,10 @@ export default function InvoiceCreate({
           company={company}
           types={types}
           statuses={statuses}
+          users={users}
           cancelHref={index().url}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

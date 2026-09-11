@@ -115,6 +115,8 @@ export function LeadKanbanCard({
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <StatusBadge value={lead.temperature} options={temperatures} />
 
+        {lead.vacancy_position && <MetaChip title="Posisi loker">{lead.vacancy_position}</MetaChip>}
+
         {lead.next_action_date && (
           <MetaChip
             icon={CalendarDays}

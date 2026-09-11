@@ -2,8 +2,10 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { ClientCombobox } from '@/components/crm/client-combobox';
 import { ContractTable } from '@/components/crm/contracts/contract-table';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { Pagination } from '@/components/crm/pagination';
+import { Toolbar } from '@/components/crm/toolbar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -66,20 +68,20 @@ export default function ContractsIndex({
     <>
       <Head title="MoU & Kontrak" />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title="MoU & Kontrak"
-          actions={
-            <Button asChild>
-              <Link href={create()}>
-                <Plus className="size-4" />
-                Buat MoU
-              </Link>
-            </Button>
-          }
-        />
+      <PageHeader
+        title="MoU & Kontrak"
+        actions={
+          <Button asChild>
+            <Link href={create()}>
+              <Plus className="size-4" />
+              Buat MoU
+            </Link>
+          </Button>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
+      <PageBody>
+        <Toolbar trailing={`${groups.total} klien`}>
           <ClientCombobox
             clients={filterClients}
             value={filters.filterClient}
@@ -90,7 +92,7 @@ export default function ContractsIndex({
             value={filters.status || 'all'}
             onValueChange={(value) => applyFilters({ status: value === 'all' ? '' : value })}
           >
-            <SelectTrigger className="w-full sm:w-52">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Semua status" />
             </SelectTrigger>
             <SelectContent>
@@ -102,7 +104,7 @@ export default function ContractsIndex({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </Toolbar>
 
         <ContractTable
           groups={orphans ? [orphans, ...groups.data] : groups.data}
@@ -113,7 +115,7 @@ export default function ContractsIndex({
         />
 
         <Pagination meta={groups} />
-      </div>
+      </PageBody>
     </>
   );
 }

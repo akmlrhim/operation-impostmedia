@@ -33,11 +33,9 @@ function GoogleIcon({ className }: { className?: string }) {
 export default function GoogleLoginButton({
   label,
   turnstileSiteKey,
-  knownAccount = false,
 }: {
   label?: string;
   turnstileSiteKey?: string | null;
-  knownAccount?: boolean;
 } = {}) {
   const [verified, setVerified] = useState(false);
   const [widgetFailed, setWidgetFailed] = useState(false);
@@ -64,18 +62,6 @@ export default function GoogleLoginButton({
         <GoogleIcon className="h-4 w-4" />
         {label ?? 'Lanjutkan dengan Google'}
       </Button>
-
-      {knownAccount && (
-        <button
-          type="submit"
-          name="switch"
-          value="1"
-          className="text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-          data-test="google-switch-account"
-        >
-          Pakai akun Google lain
-        </button>
-      )}
 
       {widgetFailed && (
         <p className="text-center text-xs text-muted-foreground">

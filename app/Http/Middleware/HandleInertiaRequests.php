@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Crm\NotificationFeed;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,6 +40,7 @@ class HandleInertiaRequests extends Middleware
                     ->makeHidden('googleAccount'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'notifications' => fn (): array => NotificationFeed::props($request->user()),
         ];
     }
 }

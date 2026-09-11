@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useRef } from 'react';
+import { AssigneeField } from '@/components/crm/assignee-field';
 import { ClientFormModalCompany } from '@/components/crm/client-form-modal-company';
 import { ClientFormModalContact } from '@/components/crm/client-form-modal-contact';
 import type { ClientFormData } from '@/components/crm/client-form-modal-types';
@@ -7,15 +8,16 @@ import { FormModal } from '@/components/crm/form-modal';
 import { FormSection } from '@/components/crm/form-section';
 import { Button } from '@/components/ui/button';
 import { shortCode as shortCodeUrl, store, update } from '@/routes/clients';
-import type { Client, Option } from '@/types/crm';
+import type { Client, Option, UserOption } from '@/types/crm';
 
 type Props = {
   client?: Client;
   statuses: Option[];
+  users: UserOption[];
   onClose: () => void;
 };
 
-export function ClientFormModal({ client, statuses, onClose }: Props) {
+export function ClientFormModal({ client, statuses, users, onClose }: Props) {
   const isEdit = Boolean(client);
 
   const form = useForm<ClientFormData>({
@@ -29,6 +31,7 @@ export function ClientFormModal({ client, statuses, onClose }: Props) {
     contact_position: client?.contact_position ?? '',
     status: client?.status ?? 'active',
     notes: client?.notes ?? '',
+    assigned_to_ids: client?.assignees?.map((user) => user.id) ?? [],
   });
 
   const title = isEdit ? `Ubah ${client?.company_name}` : 'Klien baru';
@@ -107,6 +110,13 @@ export function ClientFormModal({ client, statuses, onClose }: Props) {
 
         <FormSection title="PIC & penanggung jawab" className="lg:border-l lg:pl-6">
           <ClientFormModalContact form={form} />
+
+          <AssigneeField
+            value={form.data.assigned_to_ids}
+            users={users}
+            error={form.errors.assigned_to_ids}
+            onChange={(value) => form.setData('assigned_to_ids', value)}
+          />
         </FormSection>
       </div>
     </FormModal>

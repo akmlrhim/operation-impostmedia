@@ -76,7 +76,7 @@ export function InvoiceTable({
       />
 
       {groups.length === 0 && (
-        <Card className="rounded-sm py-10 text-center text-muted-foreground">
+        <Card className="py-8 text-center text-sm text-muted-foreground">
           Belum ada invoice yang cocok.
         </Card>
       )}
@@ -89,7 +89,7 @@ export function InvoiceTable({
           !groupSelected && group.invoices.some((invoice) => selection.selected.has(invoice.id));
 
         return (
-          <Card key={group.id ?? 'orphans'} className="gap-0 overflow-hidden rounded-sm py-0">
+          <Card key={group.id ?? 'orphans'} className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3">
               {group.id === null ? (
                 <span className="font-medium text-muted-foreground">{group.company_name}</span>

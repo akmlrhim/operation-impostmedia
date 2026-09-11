@@ -16,6 +16,7 @@ import type {
   LineItem,
   Option,
   ServiceOption,
+  UserOption,
 } from '@/types/crm';
 
 type Props = {
@@ -28,6 +29,7 @@ type Props = {
   company: CompanyProfile;
   types: Option[];
   statuses: Option[];
+  users: UserOption[];
   cancelHref: string;
 };
 
@@ -54,6 +56,7 @@ export function InvoiceForm({
   company,
   types,
   statuses,
+  users,
   cancelHref,
 }: Props) {
   const isEdit = Boolean(invoice);
@@ -73,6 +76,7 @@ export function InvoiceForm({
     discount_amount: invoice?.discount_amount ?? '0',
     tax_percent: invoice?.tax_percent ?? '0',
     status: invoice?.status ?? 'draft',
+    assigned_to_ids: invoice?.assignees?.map((user) => user.id) ?? [],
     notes: invoice?.notes ?? company.invoice_notes,
     items: (invoice?.items?.length ? invoice.items : [{ ...emptyLineItem }]) as LineItem[],
   });
@@ -135,6 +139,7 @@ export function InvoiceForm({
           lockedClientName={lockedClientName}
           availableContracts={availableContracts}
           types={types}
+          users={users}
           statuses={statuses}
           onSelectClient={selectClient}
           onNumberEdited={() => {

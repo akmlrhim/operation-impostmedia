@@ -11,10 +11,18 @@ export type TabItem = {
   count?: number;
 };
 
-export function TabNav({ tabs, active }: { tabs: TabItem[]; active: string }) {
+export function TabNav({
+  tabs,
+  active,
+  label = 'Bagian halaman',
+}: {
+  tabs: TabItem[];
+  active: string;
+  label?: string;
+}) {
   return (
     <div className="overflow-x-auto overflow-y-hidden">
-      <nav className="flex min-w-max gap-1 border-b" aria-label="Bagian halaman klien">
+      <nav className="flex min-w-max gap-4 border-b border-border" aria-label={label}>
         {tabs.map((tab) => {
           const current = tab.value === active;
 
@@ -24,18 +32,18 @@ export function TabNav({ tabs, active }: { tabs: TabItem[]; active: string }) {
               href={tab.href}
               aria-current={current ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-1.5 border-b-2 pb-1.5 text-[0.8125rem] font-medium transition-colors',
                 current
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
+                  ? 'border-foreground text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
               {tab.label}
               {tab.count !== undefined && (
                 <span
                   className={cn(
-                    'rounded-full px-1.5 py-0.5 text-xs',
-                    current ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                    'rounded-sm px-1 py-px num text-[0.6875rem]',
+                    current ? 'bg-accent text-foreground' : 'bg-muted text-muted-foreground',
                   )}
                 >
                   {tab.count}

@@ -108,7 +108,7 @@ export function LeadTimeline({
 
       <CardContent>
         {timeline.length === 0 && (
-          <p className="rounded-lg border border-dashed px-3 py-10 text-center text-sm text-muted-foreground">
+          <p className="rounded-md border border-dashed px-3 py-8 text-center text-sm text-muted-foreground">
             Belum ada catatan. Mulai dari hasil kontak pertama dengan klien ini.
           </p>
         )}

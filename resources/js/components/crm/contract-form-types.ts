@@ -17,5 +17,6 @@ export type ContractFormData = {
   first_party_name: string;
   first_party_position: string;
   status: string;
+  assigned_to_ids: number[];
   items: LineItem[];
 };

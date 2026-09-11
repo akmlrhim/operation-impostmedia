@@ -8,6 +8,7 @@ import type { TemperatureBucket } from '@/components/crm/dashboard/temperature-c
 import { TrendChart } from '@/components/crm/dashboard/trend-chart';
 import type { TrendPoint } from '@/components/crm/dashboard/trend-chart';
 import type { AttentionItem } from '@/components/crm/dashboard/types';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import {
   Select,
@@ -74,57 +75,57 @@ export default function CrmDashboard({
 
   return (
     <>
-      <Head title="Dashboard CRM" />
+      <Head title="Ringkasan" />
 
-      <div className="flex flex-1 flex-col gap-6 p-4">
-        <PageHeader
-          title="Dashboard CRM"
-          actions={
-            <Select
-              value={month}
-              onValueChange={(value) =>
-                router.get(
-                  crmDashboard().url,
-                  { month: value },
-                  { preserveState: true, preserveScroll: true, replace: true },
-                )
-              }
-            >
-              <SelectTrigger className="w-44" aria-label="Periode dashboard">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          }
-        />
+      <PageHeader
+        title="Ringkasan"
+        actions={
+          <Select
+            value={month}
+            onValueChange={(value) =>
+              router.get(
+                crmDashboard().url,
+                { month: value },
+                { preserveState: true, preserveScroll: true, replace: true },
+              )
+            }
+          >
+            <SelectTrigger className="w-40" aria-label="Periode ringkasan">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
+      <PageBody>
         <DashboardStats stats={stats} period={period} />
 
         <TemperatureCard temperature={temperature} />
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-3">
           <TrendChart data={trend} period={period} />
           <AgingCard aging={aging} />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-3">
           <AttentionCard attention={attention} />
           <ActivitiesCard activities={activities} period={period} />
         </div>
-      </div>
+      </PageBody>
     </>
   );
 }
 
 CrmDashboard.layout = {
   breadcrumbs: [
-    { title: 'General', href: dashboard() },
-    { title: 'Dashboard CRM', href: crmDashboard() },
+    { title: 'Beranda', href: dashboard() },
+    { title: 'Ringkasan', href: crmDashboard() },
   ],
 };

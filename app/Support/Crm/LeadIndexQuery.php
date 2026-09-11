@@ -20,6 +20,7 @@ class LeadIndexQuery
         'date_in' => 'leads.date_in',
         'company_name' => 'leads.company_name',
         'industry' => 'leads.industry',
+        'vacancy_position' => 'leads.vacancy_position',
         'contact_name' => 'leads.contact_name',
         'region' => 'leads.region',
         'source' => 'leads.source',
@@ -28,13 +29,14 @@ class LeadIndexQuery
         'estimated_value' => 'leads.estimated_value',
         'last_contact_date' => 'leads.last_contact_date',
         'next_action_date' => 'leads.next_action_date',
+        'meeting_date' => 'leads.meeting_date',
         'status' => 'leads.status',
     ];
 
     /**
      * @var list<string>
      */
-    private const RELATIONS = ['stage:id,name,color,type', 'servicePackages:id,name,price', 'latestInvoice'];
+    private const RELATIONS = ['stage:id,name,color,type', 'servicePackages:id,name,price', 'latestInvoice', 'assignees:id,name'];
 
     /**
      * @return list<array<string, mixed>>
@@ -85,6 +87,7 @@ class LeadIndexQuery
             'leads' => ListPage::of($leads)->through(fn (Lead $lead): array => [
                 ...self::card($lead),
                 'stage' => $lead->stage?->only(['id', 'name', 'color']),
+                'assignees' => $lead->assignees->map(fn ($user): array => $user->only(['id', 'name']))->values()->all(),
             ]),
             'filters' => [
                 'status' => $status,
@@ -121,13 +124,17 @@ class LeadIndexQuery
             'date_in' => $lead->date_in->toDateString(),
             'company_name' => $lead->company_name,
             'industry' => $lead->industry,
+            'vacancy_position' => $lead->vacancy_position,
             'contact_name' => $lead->contact_name,
             'email' => $lead->email,
             'phone' => $lead->phone,
             'region' => $lead->region,
             'source' => $lead->source?->value,
             'pic' => $lead->pic,
-            'pic_impost' => $lead->pic_impost,
+            'assignees' => $lead->assignees
+                ->map(fn ($user): array => $user->only(['id', 'name']))
+                ->values()
+                ->all(),
             'service_packages' => $lead->servicePackages
                 ->map(fn (ServicePackage $package): array => [
                     'id' => $package->id,
@@ -145,6 +152,7 @@ class LeadIndexQuery
             'last_contact_date' => $lead->last_contact_date?->toDateString(),
             'next_action_date' => $lead->next_action_date?->toDateString(),
             'next_action' => $lead->next_action,
+            'meeting_date' => $lead->meeting_date?->toDateString(),
             'temperature' => $lead->temperature->value,
             'notes' => $lead->notes,
             'folder_url' => $lead->folder_url,

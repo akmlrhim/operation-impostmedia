@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Exceptions\GoogleLoginDenied;
 use App\Models\GoogleAccount;
 use App\Models\User;
+use App\Support\Crm\Notifier;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Two\User as GoogleUser;
 
@@ -60,6 +61,15 @@ class LoginWithGoogle
             'is_active' => true,
             'approved_at' => $first ? now() : null,
         ])->save();
+
+        if ($user->approved_at === null) {
+            Notifier::superusers(
+                'user',
+                $user->name,
+                'Pendaftar baru menunggu persetujuan',
+                route('users.index'),
+            );
+        }
 
         return $user;
     }

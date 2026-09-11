@@ -2,7 +2,10 @@
 
 namespace App\Actions\Crm;
 
+use App\Actions\Finance\RecordInvoiceIncome;
+use App\Enums\FinanceTransactionType;
 use App\Enums\InvoiceStatus;
+use App\Models\FinanceTransaction;
 use App\Models\Invoice;
 
 class SyncInvoiceStatus
@@ -30,6 +33,22 @@ class SyncInvoiceStatus
             'paid_at' => $status === InvoiceStatus::Paid ? ($invoice->paid_at ?? now()) : null,
         ]);
 
+        $this->syncFinance($status, $invoice);
+
         return $invoice;
+    }
+
+    private function syncFinance(InvoiceStatus $status, Invoice $invoice): void
+    {
+        if ($status === InvoiceStatus::Paid) {
+            app(RecordInvoiceIncome::class)->handle($invoice);
+
+            return;
+        }
+
+        FinanceTransaction::query()
+            ->where('invoice_id', $invoice->id)
+            ->where('type', FinanceTransactionType::Income)
+            ->forceDelete();
     }
 }

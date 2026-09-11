@@ -16,8 +16,8 @@ const attentionKinds = {
 } as const;
 
 const severityTones = {
-  critical: 'text-red-600 dark:text-red-400',
-  serious: 'text-amber-600 dark:text-amber-400',
+  critical: 'text-red-700 dark:text-red-400',
+  serious: 'text-amber-700 dark:text-amber-400',
   warning: 'text-muted-foreground',
 } as const;
 
@@ -25,13 +25,13 @@ export function AttentionCard({ attention }: { attention: AttentionItem[] }) {
   return (
     <Card className="lg:col-span-2">
       <CardHeader className="flex-row items-center gap-3">
-        <CardTitle className="mr-auto flex items-center gap-2 text-base">
+        <CardTitle className="mr-auto flex items-center gap-2">
           <ListChecks className="size-4" />
           Butuh perhatian saat ini
         </CardTitle>
         <Link
           href={invoicesIndex()}
-          className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           Semua invoice
           <ChevronRight className="size-3.5" />
@@ -52,7 +52,7 @@ export function AttentionCard({ attention }: { attention: AttentionItem[] }) {
                 <li key={`${item.kind}-${item.id}`}>
                   <Link
                     href={kind.href(item.id)}
-                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-accent"
+                    className="-mx-2 flex items-center gap-3 rounded-sm px-2 py-1.5 transition-colors hover:bg-accent"
                   >
                     <kind.icon
                       aria-hidden
@@ -60,7 +60,9 @@ export function AttentionCard({ attention }: { attention: AttentionItem[] }) {
                     />
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{item.title}</span>
+                      <span className="block truncate text-[0.8125rem] font-medium">
+                        {item.title}
+                      </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {item.subtitle} · {formatDate(item.date)}
                       </span>
@@ -68,7 +70,9 @@ export function AttentionCard({ attention }: { attention: AttentionItem[] }) {
 
                     <span className="shrink-0 text-right">
                       {item.amount !== null && (
-                        <span className="block text-sm font-medium">{rupiah(item.amount)}</span>
+                        <span className="block num text-[0.8125rem] font-medium">
+                          {rupiah(item.amount)}
+                        </span>
                       )}
                       <span className={cn('block text-xs', severityTones[item.severity])}>
                         {relativeDueLabel(item.date)}

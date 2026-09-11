@@ -1,4 +1,5 @@
 import type { InertiaForm } from '@inertiajs/react';
+import { AssigneeField } from '@/components/crm/assignee-field';
 import type { ContractFormData } from '@/components/crm/contract-form-types';
 import { Field, FormGrid } from '@/components/crm/field';
 import { DateField } from '@/components/ui/date-field';
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Client, Option } from '@/types/crm';
+import type { Client, Option, UserOption } from '@/types/crm';
 
 export function ContractFormDetails({
   form,
@@ -20,6 +21,7 @@ export function ContractFormDetails({
   types,
   statuses,
   billingCycles,
+  users,
   onNumberEdited,
   onSelectSignedDate,
 }: {
@@ -30,6 +32,7 @@ export function ContractFormDetails({
   types: Option[];
   statuses: Option[];
   billingCycles: Option[];
+  users: UserOption[];
   onNumberEdited: () => void;
   onSelectSignedDate: (value: string) => void;
 }) {
@@ -198,6 +201,12 @@ export function ContractFormDetails({
           onChange={(value) => form.setData('next_invoice_date', value)}
         />
       </Field>
+      <AssigneeField
+        value={form.data.assigned_to_ids}
+        users={users}
+        error={form.errors.assigned_to_ids}
+        onChange={(value) => form.setData('assigned_to_ids', value)}
+      />
     </FormGrid>
   );
 }

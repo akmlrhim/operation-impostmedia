@@ -12,6 +12,7 @@ enum LeadSource: string implements HasLabel
     case Tender = 'tender';
     case Event = 'event';
     case ColdOutreach = 'cold_outreach';
+    case JobPosting = 'job_posting';
     case Other = 'other';
 
     public function label(): string
@@ -25,6 +26,7 @@ enum LeadSource: string implements HasLabel
             self::Tender => 'Tender',
             self::Event => 'Event / Pameran',
             self::ColdOutreach => 'Cold Call / Email',
+            self::JobPosting => 'Loker (Organik)',
             self::Other => 'Lainnya',
         };
     }

@@ -17,11 +17,12 @@ use App\Models\Service;
 use App\Support\BulkDeleteSummary;
 use App\Support\Crm\LeadDetail;
 use App\Support\Crm\LeadIndexQuery;
+use App\Support\Crm\Notifier;
+use App\Support\Crm\UserOptions;
 use App\Support\Csv\CsvExport;
 use App\Support\EnumOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,6 +59,7 @@ class LeadController extends Controller
             'temperatures' => EnumOptions::from(LeadTemperature::class),
             'stageTypes' => EnumOptions::from(LeadStageType::class),
             'services' => Service::pickable(),
+            'users' => UserOptions::assignable(),
         ];
     }
 
@@ -77,12 +79,19 @@ class LeadController extends Controller
     {
         $stage = LeadStage::query()->findOrFail($request->integer('lead_stage_id'));
 
+        $data = $request->validated();
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
+
         $lead = Lead::create([
-            ...Arr::except($request->validated(), 'service_package_ids'),
+            ...$data,
             'position' => (int) $stage->leads()->max('position') + 1,
+            'created_by' => auth()->id(),
         ]);
 
+        $lead->assignees()->sync($assignedToIds);
         $lead->servicePackages()->sync(self::packageOrder($request));
+        $lead->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lead ditambahkan.']);
 
@@ -91,8 +100,14 @@ class LeadController extends Controller
 
     public function update(LeadRequest $request, Lead $lead): RedirectResponse
     {
-        $lead->update(Arr::except($request->validated(), 'service_package_ids'));
+        $data = $request->validated();
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
+
+        $lead->update($data);
+        $lead->assignees()->sync($assignedToIds);
         $lead->servicePackages()->sync(self::packageOrder($request));
+        $lead->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lead diperbarui.']);
 
@@ -179,6 +194,14 @@ class LeadController extends Controller
 
         $client = $converter->handle($lead->fresh());
 
+        Notifier::involved(
+            $lead,
+            'lead',
+            $lead->company_name,
+            'Lead sudah jadi klien',
+            route('clients.show', $client),
+        );
+
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => "Lead dikonversi jadi klien {$client->company_name}.",
@@ -216,28 +239,29 @@ class LeadController extends Controller
         return CsvExport::download(
             'leads-'.now()->format('Ymd-His').'.csv',
             [
-                'Date In', 'Client Name', 'Industry', 'Contact Person', 'Contact Info',
-                'Asal Daerah', 'Source', 'PIC', 'PIC Impost', 'Service Needed',
+                'Date In', 'Client Name', 'Industry', 'Posisi Loker', 'Contact Person', 'Contact Info',
+                'Asal Daerah', 'Source', 'PIC', 'Service Needed',
                 'Invoice Terakhir', 'Estimated Value (Rp)', 'Last Contact Date',
-                'Next Action Date', 'Next Action', 'Temperature', 'Notes', 'Link Folder',
+                'Next Action Date', 'Next Action', 'Meeting Date', 'Temperature', 'Notes', 'Link Folder',
                 'Deal Status',
             ],
             $leads->map(fn (Lead $lead): array => [
                 $lead->date_in->format('Y-m-d'),
                 $lead->company_name,
                 $lead->industry ?? '-',
+                $lead->vacancy_position ?? '-',
                 $lead->contact_name ?? '-',
                 implode(' / ', array_filter([$lead->phone, $lead->email])) ?: '-',
                 $lead->region ?? '-',
                 $lead->source?->label() ?? '-',
                 $lead->pic ?? '-',
-                $lead->pic_impost ?? '-',
                 $lead->servicePackages->pluck('name')->implode(', ') ?: '-',
                 $lead->latestInvoice->number ?? '-',
                 (string) $lead->estimated_value,
                 $lead->last_contact_date?->format('Y-m-d') ?? '-',
                 $lead->next_action_date?->format('Y-m-d') ?? '-',
                 $lead->next_action ?? '-',
+                $lead->meeting_date?->format('Y-m-d') ?? '-',
                 $lead->temperature->label(),
                 $lead->notes ?? '-',
                 $lead->folder_url ?? '-',

@@ -105,7 +105,7 @@ const navBase =
   'flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 const shellBase =
-  'flex h-9 w-full min-w-0 items-center gap-1 rounded-md border border-input bg-transparent pr-1 pl-3 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50';
+  'flex h-8 w-full min-w-0 items-center gap-1 rounded-md border border-input bg-background pr-1 pl-2.5 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50';
 
 export type DateFieldProps = {
   id?: string;

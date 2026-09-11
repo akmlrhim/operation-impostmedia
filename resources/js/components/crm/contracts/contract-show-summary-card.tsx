@@ -43,6 +43,21 @@ export function ContractShowSummaryCard({
         <DetailRow label="Periode">
           {formatDate(contract.start_date)} – {formatDate(contract.end_date)}
         </DetailRow>
+        <DetailRow label="Penanggung jawab">
+          {contract.assignees && contract.assignees.length > 0 ? (
+            <ul className="flex flex-wrap gap-1.5">
+              {contract.assignees.map((user) => (
+                <li key={user.id}>
+                  <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+                    {user.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span className="text-muted-foreground">Belum ditentukan</span>
+          )}
+        </DetailRow>
         <DetailRow label="Ditandatangani">{formatDate(contract.signed_date)}</DetailRow>
         <DetailRow label="Tempat">{contract.signing_place ?? '-'}</DetailRow>
         <DetailRow label="Siklus tagihan">

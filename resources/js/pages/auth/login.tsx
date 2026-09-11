@@ -6,16 +6,15 @@ type Props = {
   status?: string;
   errors: { google?: string };
   turnstileSiteKey: string | null;
-  knownAccount: boolean;
 };
 
-export default function Login({ status, errors, turnstileSiteKey, knownAccount }: Props) {
+export default function Login({ status, errors, turnstileSiteKey }: Props) {
   return (
     <>
       <Head title="Masuk" />
 
       <div className="grid gap-4">
-        <GoogleLoginButton turnstileSiteKey={turnstileSiteKey} knownAccount={knownAccount} />
+        <GoogleLoginButton turnstileSiteKey={turnstileSiteKey} />
 
         <InputError message={errors.google} className="text-center" />
       </div>

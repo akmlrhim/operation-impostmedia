@@ -30,6 +30,16 @@ enum InvoiceStatus: string implements HasLabel
 
     public function isOutstanding(): bool
     {
-        return in_array($this, [self::Sent, self::PartiallyPaid, self::Overdue], true);
+        return in_array($this, self::outstanding(), true);
+    }
+
+    /**
+     * Tagihan yang masih ditunggu pembayarannya.
+     *
+     * @return list<self>
+     */
+    public static function outstanding(): array
+    {
+        return [self::Sent, self::PartiallyPaid, self::Overdue];
     }
 }

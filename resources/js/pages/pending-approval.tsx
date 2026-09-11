@@ -14,7 +14,7 @@ export default function PendingApproval({ name, email }: Props) {
       <Head title="Menunggu verifikasi" />
 
       <div className="grid gap-6">
-        <div className="rounded-lg border bg-muted/40 p-4 text-center">
+        <div className="rounded-md border bg-muted/40 p-3 text-center">
           <p className="font-medium">{name}</p>
           <p className="text-sm text-muted-foreground">{email}</p>
         </div>

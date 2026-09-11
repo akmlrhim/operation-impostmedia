@@ -9,4 +9,5 @@ export type ClientFormData = {
   contact_position: string;
   status: string;
   notes: string;
+  assigned_to_ids: number[];
 };

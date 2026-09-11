@@ -40,7 +40,10 @@ export function Field({
       onChangeCapture={() => setInvalidMessage('')}
     >
       <div className="flex items-center gap-1">
-        <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">
+        <Label
+          htmlFor={htmlFor}
+          className="text-xs font-bold tracking-wide text-muted-foreground uppercase"
+        >
           {label}
           {required && (
             <span aria-hidden className="text-destructive">

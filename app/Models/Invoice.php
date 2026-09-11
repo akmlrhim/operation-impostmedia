@@ -7,6 +7,7 @@ use App\Enums\InvoiceType;
 use App\Models\Concerns\BroadcastsCrmChanges;
 use App\Models\Concerns\HasActivities;
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\HasOwners;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,11 +35,23 @@ use Illuminate\Support\Carbon;
  */
 class Invoice extends Model
 {
-    use BroadcastsCrmChanges, HasActivities, HasAttachments, SoftDeletes;
+    use BroadcastsCrmChanges, HasActivities, HasAttachments, HasOwners, SoftDeletes;
 
     protected $guarded = ['id'];
 
     public const DEFAULT_DUE_DAYS = 14;
+
+    /**
+     * @return array{subject: string, label: string, url: string}
+     */
+    public function notificationMeta(): array
+    {
+        return [
+            'subject' => 'Invoice',
+            'label' => $this->number,
+            'url' => route('invoices.show', $this),
+        ];
+    }
 
     /**
      * @return array<string, string>
@@ -94,11 +107,7 @@ class Invoice extends Model
      */
     public function scopeOutstanding(Builder $query): void
     {
-        $query->whereIn('status', [
-            InvoiceStatus::Sent,
-            InvoiceStatus::PartiallyPaid,
-            InvoiceStatus::Overdue,
-        ]);
+        $query->whereIn('invoices.status', InvoiceStatus::outstanding());
     }
 
     /**
@@ -106,7 +115,7 @@ class Invoice extends Model
      */
     public function scopeOverdue(Builder $query): void
     {
-        $query->outstanding()->where('due_date', '<', now()->toDateString());
+        $query->outstanding()->where('invoices.due_date', '<', now()->toDateString());
     }
 
     public function recalculate(): void

@@ -1,5 +1,5 @@
 import { CircleDollarSign, Receipt, Target, Wallet } from 'lucide-react';
-import { StatCard } from '@/components/crm/stat-card';
+import { StatCard, StatStrip } from '@/components/crm/stat-card';
 import { rupiahCompact } from '@/lib/format';
 
 export function DashboardStats({
@@ -20,7 +20,7 @@ export function DashboardStats({
   };
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <StatStrip>
       <StatCard
         label={`Uang masuk ${period}`}
         value={rupiahCompact(stats.collected)}
@@ -53,6 +53,6 @@ export function DashboardStats({
         icon={Target}
         hint={`${stats.openLeads} lead masih terbuka`}
       />
-    </div>
+    </StatStrip>
   );
 }

@@ -39,6 +39,21 @@ export function InvoiceShowSummaryCard({
             </Link>
           </DetailRow>
         )}
+        <DetailRow label="Penanggung jawab">
+          {invoice.assignees && invoice.assignees.length > 0 ? (
+            <ul className="flex flex-wrap gap-1.5">
+              {invoice.assignees.map((user) => (
+                <li key={user.id}>
+                  <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+                    {user.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span className="text-muted-foreground">Belum ditentukan</span>
+          )}
+        </DetailRow>
         <DetailRow label="Terbit">{formatDate(invoice.issue_date)}</DetailRow>
         <DetailRow label="Jatuh tempo">{formatDate(invoice.due_date)}</DetailRow>
         {invoice.period_start && (

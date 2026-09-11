@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { InvoiceForm } from '@/components/crm/invoice-form';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { edit, index, show } from '@/routes/invoices';
 import type {
@@ -9,6 +10,7 @@ import type {
   Invoice,
   Option,
   ServiceOption,
+  UserOption,
 } from '@/types/crm';
 
 type Props = {
@@ -19,6 +21,7 @@ type Props = {
   company: CompanyProfile;
   types: Option[];
   statuses: Option[];
+  users: UserOption[];
 };
 
 export default function InvoiceEdit({
@@ -29,14 +32,15 @@ export default function InvoiceEdit({
   company,
   types,
   statuses,
+  users,
 }: Props) {
   return (
     <>
       <Head title={`Ubah ${invoice.number}`} />
 
-      <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
-        <PageHeader title={`Ubah ${invoice.number}`} backHref={show(invoice.id).url} />
+      <PageHeader title={`Ubah ${invoice.number}`} backHref={show(invoice.id).url} />
 
+      <PageBody className="mx-auto w-full max-w-5xl">
         <InvoiceForm
           invoice={invoice}
           suggestedNumber={invoice.number}
@@ -46,9 +50,10 @@ export default function InvoiceEdit({
           company={company}
           types={types}
           statuses={statuses}
+          users={users}
           cancelHref={show(invoice.id).url}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

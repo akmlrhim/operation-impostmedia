@@ -9,6 +9,7 @@ use App\Http\Requests\Crm\ClientRequest;
 use App\Models\Client;
 use App\Support\BulkDeleteSummary;
 use App\Support\Crm\ClientIndexQuery;
+use App\Support\Crm\UserOptions;
 use App\Support\Csv\CsvExport;
 use App\Support\EnumOptions;
 use App\Support\ListRedirect;
@@ -42,6 +43,7 @@ class ClientController extends Controller
                 'direction' => $direction,
             ],
             'statuses' => EnumOptions::from(ClientStatus::class),
+            'users' => UserOptions::assignable(),
             'filterClients' => Client::query()
                 ->orderBy('company_name')
                 ->get(['id', 'company_name']),
@@ -62,24 +64,31 @@ class ClientController extends Controller
     public function show(Client $client): Response
     {
         return Inertia::render('clients/show', [
-            'client' => $client->load('attachments.uploader:id,name'),
+            'client' => $client->load(['attachments.uploader:id,name', 'assignees:id,name']),
             'contracts' => $client->contracts()
                 ->select(['id', 'client_id', 'number', 'title', 'value', 'status', 'start_date', 'end_date'])
                 ->latest('id')
                 ->get(),
             'invoices' => $client->invoices()->latest('id')->get(),
             'statuses' => EnumOptions::from(ClientStatus::class),
+            'users' => UserOptions::assignable(),
         ]);
     }
 
     public function store(ClientRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         $client = Client::create([
             ...$data,
             'short_code' => $data['short_code'] ?? Client::generateShortCode($data['company_name']),
+            'created_by' => auth()->id(),
         ]);
+
+        $client->assignees()->sync($assignedToIds);
+        $client->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Klien {$client->company_name} ditambahkan."]);
 
@@ -89,10 +98,14 @@ class ClientController extends Controller
     public function update(ClientRequest $request, Client $client): RedirectResponse
     {
         $data = $request->validated();
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         $data['short_code'] ??= Client::generateShortCode($data['company_name'], $client->id);
 
         $client->update($data);
+        $client->assignees()->sync($assignedToIds);
+        $client->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data klien diperbarui.']);
 

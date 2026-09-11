@@ -59,7 +59,7 @@ export function ClientTable({
         onClear={selection.clear}
       />
 
-      <Card className="overflow-hidden rounded-sm py-0">
+      <Card className="overflow-hidden py-0">
         <Table className="min-w-3xl">
           <TableHeader>
             <TableRow>
@@ -98,7 +98,7 @@ export function ClientTable({
           <TableBody>
             {clients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                   Belum ada klien yang cocok.
                 </TableCell>
               </TableRow>
@@ -117,11 +117,13 @@ export function ClientTable({
                   <Link href={show(client.id)} className="font-medium hover:underline">
                     {client.company_name}
                   </Link>
-                  {client.city && <p>{client.city}</p>}
+                  {client.city && <p className="text-xs text-muted-foreground">{client.city}</p>}
                 </TableCell>
                 <TableCell>
                   {client.contact_name ?? '-'}
-                  {client.contact_position && <p>{client.contact_position}</p>}
+                  {client.contact_position && (
+                    <p className="text-xs text-muted-foreground">{client.contact_position}</p>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   <DocumentMenu

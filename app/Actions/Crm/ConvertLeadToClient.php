@@ -28,6 +28,9 @@ class ConvertLeadToClient
                 'notes' => $lead->notes,
             ]);
 
+            $client->assignees()->sync($lead->assignees()->pluck('users.id')->all());
+            $client->notifyNewAssignees();
+
             $attributes = [
                 'status' => LeadStatus::Won,
                 'converted_client_id' => $client->id,

@@ -41,7 +41,7 @@ export function TemperatureCard({ temperature }: { temperature: TemperatureBucke
     <Card>
       <CardHeader className="flex-row flex-wrap items-start gap-3">
         <div className="mr-auto space-y-1">
-          <CardTitle className="text-base">Suhu lead saat ini</CardTitle>
+          <CardTitle>Lead temperature</CardTitle>
           <p className="text-xs text-muted-foreground">
             {leads === 0
               ? 'Belum ada lead terbuka.'
@@ -50,8 +50,8 @@ export function TemperatureCard({ temperature }: { temperature: TemperatureBucke
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div aria-hidden className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-muted">
+      <CardContent className="space-y-3">
+        <div aria-hidden className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted">
           {leads > 0 &&
             temperature.map((bucket) =>
               bucket.count > 0 ? (
@@ -67,7 +67,7 @@ export function TemperatureCard({ temperature }: { temperature: TemperatureBucke
             )}
         </div>
 
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul className="grid gap-2 sm:grid-cols-3">
           {temperature.map((bucket) => {
             const look = LOOK[bucket.value];
             const Icon = look?.icon ?? Thermometer;
@@ -75,19 +75,23 @@ export function TemperatureCard({ temperature }: { temperature: TemperatureBucke
             return (
               <li
                 key={bucket.value}
-                className={cn('rounded-lg border p-3', bucket.count === 0 && 'opacity-60')}
+                className={cn('rounded-sm border p-2.5', bucket.count === 0 && 'opacity-60')}
               >
                 <div className="flex items-center gap-1.5">
                   <Icon aria-hidden className={cn('size-4 shrink-0', look?.text)} />
                   <span className="text-sm font-medium">{bucket.label}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">{bucket.count} lead</span>
+                  <span className="ml-auto num text-xs text-muted-foreground">
+                    {bucket.count} lead
+                  </span>
                 </div>
 
-                <p className={cn('mt-1.5 text-lg font-semibold', look?.text)}>
+                <p className={cn('mt-1 num text-base font-semibold', look?.text)}>
                   {rupiahCompact(bucket.total)}
                 </p>
 
-                <p className="mt-0.5 text-xs text-muted-foreground">{bucket.description}</p>
+                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                  {bucket.description}
+                </p>
               </li>
             );
           })}

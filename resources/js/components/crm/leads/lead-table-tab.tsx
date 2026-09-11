@@ -1,5 +1,6 @@
 import { LeadTable } from '@/components/crm/leads/lead-table';
 import { Pagination } from '@/components/crm/pagination';
+import { Toolbar } from '@/components/crm/toolbar';
 import {
   Select,
   SelectContent,
@@ -25,7 +26,6 @@ export function LeadTableTab({
   filters,
   stageOptions,
   statuses,
-  sources,
   temperatures,
   onFilterStage,
   onFilterStatus,
@@ -36,7 +36,6 @@ export function LeadTableTab({
   filters: TableFilters;
   stageOptions: StageOption[];
   statuses: Option[];
-  sources: Option[];
   temperatures: Option[];
   onFilterStage: (stageId: number | null) => void;
   onFilterStatus: (status: string) => void;
@@ -45,12 +44,12 @@ export function LeadTableTab({
 }) {
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      <Toolbar trailing={`${leads.total} lead`}>
         <Select
           value={filters.filterStage ? String(filters.filterStage) : 'all'}
           onValueChange={(value) => onFilterStage(value === 'all' ? null : Number(value))}
         >
-          <SelectTrigger className="w-full sm:w-52">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Semua kolom" />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +66,7 @@ export function LeadTableTab({
           value={filters.status || 'all'}
           onValueChange={(value) => onFilterStatus(value === 'all' ? '' : value)}
         >
-          <SelectTrigger className="w-full sm:w-52">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Semua status" />
           </SelectTrigger>
           <SelectContent>
@@ -79,12 +78,11 @@ export function LeadTableTab({
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </Toolbar>
 
       <LeadTable
         leads={leads.data}
         statuses={statuses}
-        sources={sources}
         temperatures={temperatures}
         sort={filters.sort}
         direction={filters.direction}

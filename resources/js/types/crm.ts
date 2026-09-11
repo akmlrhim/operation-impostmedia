@@ -8,6 +8,11 @@ export type UserRef = {
   name: string;
 };
 
+export type UserOption = {
+  value: number;
+  label: string;
+};
+
 export type Paginated<T> = {
   data: T[];
   links: { url: string | null; label: string; active: boolean }[];
@@ -18,22 +23,24 @@ export type Paginated<T> = {
 
 export type LeadCard = {
   id: number;
+  assignees?: UserRef[];
   date_in: string;
   company_name: string;
   industry: string | null;
+  vacancy_position: string | null;
   contact_name: string;
   email: string | null;
   phone: string | null;
   region: string | null;
   source: string | null;
   pic: string | null;
-  pic_impost: string | null;
   service_packages: { id: number; name: string; price: number }[];
   last_invoice: { id: number; number: string; issue_date: string } | null;
   estimated_value: number;
   last_contact_date: string | null;
   next_action_date: string | null;
   next_action: string | null;
+  meeting_date: string | null;
   temperature: string;
   notes: string | null;
   folder_url: string | null;
@@ -117,6 +124,7 @@ export type Client = {
   contact_position: string | null;
   status: string;
   notes: string | null;
+  assignees?: UserRef[];
   contracts_count?: number;
   attachments?: AttachmentItem[];
   invoices_count?: number;
@@ -143,6 +151,7 @@ export type ContractClause = {
 
 export type Contract = {
   id: number;
+  assignees?: UserRef[];
   number: string;
   client_id: number | null;
   lead_id: number | null;
@@ -188,6 +197,7 @@ export type Payment = {
 
 export type Invoice = {
   id: number;
+  assignees?: UserRef[];
   number: string;
   client_id: number | null;
   contract_id: number | null;

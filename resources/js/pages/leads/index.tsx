@@ -5,12 +5,20 @@ import { LeadFormModal } from '@/components/crm/lead-form-modal';
 import { LeadStageFormModal } from '@/components/crm/lead-stage-form-modal';
 import { LeadKanbanBoard } from '@/components/crm/leads/lead-kanban-board';
 import { LeadTableTab } from '@/components/crm/leads/lead-table-tab';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { TabNav } from '@/components/crm/tab-nav';
 import { Button } from '@/components/ui/button';
 import { useRealtime } from '@/hooks/use-realtime';
 import { index } from '@/routes/leads';
-import type { LeadCard, LeadStageColumn, Option, Paginated, ServiceOption } from '@/types/crm';
+import type {
+  LeadCard,
+  LeadStageColumn,
+  Option,
+  Paginated,
+  ServiceOption,
+  UserOption,
+} from '@/types/crm';
 
 type Tab = 'kanban' | 'table';
 
@@ -36,6 +44,7 @@ type Props = {
   temperatures: Option[];
   stageTypes: Option[];
   services: ServiceOption[];
+  users: UserOption[];
 };
 
 type LeadModalState = { lead?: LeadCard; stageId: number | null };
@@ -57,6 +66,7 @@ export default function LeadsIndex({
   temperatures,
   stageTypes,
   services,
+  users,
 }: Props) {
   useRealtime(['leads', 'lead-stages'], ['stages', 'leads']);
 
@@ -98,29 +108,30 @@ export default function LeadsIndex({
     <>
       <Head title="Leads" />
 
-      <div className="flex h-full flex-1 flex-col gap-4 overflow-hidden p-4">
-        <PageHeader
-          title="Leads"
-          actions={
-            <>
-              {tab === 'kanban' && (
-                <Button variant="outline" onClick={() => setStageModal({})}>
-                  <Columns3 className="size-4" />
-                  Kolom baru
-                </Button>
-              )}
-              <Button
-                disabled={stageOptions.length === 0}
-                onClick={() => setLeadModal({ stageId: stageOptions[0]?.id ?? null })}
-              >
-                <Plus className="size-4" />
-                Lead baru
+      <PageHeader
+        title="Leads"
+        actions={
+          <>
+            {tab === 'kanban' && (
+              <Button variant="outline" onClick={() => setStageModal({})}>
+                <Columns3 className="size-4" />
+                Kolom baru
               </Button>
-            </>
-          }
-        />
+            )}
+            <Button
+              disabled={stageOptions.length === 0}
+              onClick={() => setLeadModal({ stageId: stageOptions[0]?.id ?? null })}
+            >
+              <Plus className="size-4" />
+              Lead baru
+            </Button>
+          </>
+        }
+      />
 
+      <PageBody className="h-full overflow-hidden">
         <TabNav
+          label="Tampilan daftar lead"
           active={tab}
           tabs={(Object.keys(TABS) as Tab[]).map((value) => ({
             value,
@@ -146,7 +157,6 @@ export default function LeadsIndex({
             filters={filters}
             stageOptions={stageOptions}
             statuses={statuses}
-            sources={sources}
             temperatures={temperatures}
             onFilterStage={(filterStage) => applyFilters({ filterStage })}
             onFilterStatus={(status) => applyFilters({ status })}
@@ -154,7 +164,7 @@ export default function LeadsIndex({
             onEdit={(lead) => setLeadModal({ lead, stageId: lead.stage?.id ?? null })}
           />
         )}
-      </div>
+      </PageBody>
 
       {leadModal && (
         <LeadFormModal
@@ -165,6 +175,7 @@ export default function LeadsIndex({
           statuses={statuses}
           temperatures={temperatures}
           services={services}
+          users={users}
           onClose={() => setLeadModal(null)}
         />
       )}

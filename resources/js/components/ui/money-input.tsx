@@ -108,7 +108,7 @@ export function MoneyInput({
     <div
       data-slot="money-input"
       className={cn(
-        'flex h-9 w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+        'flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
         invalid && 'border-destructive ring-destructive/20 dark:ring-destructive/40',
         disabled && 'pointer-events-none cursor-not-allowed opacity-50',
         className,

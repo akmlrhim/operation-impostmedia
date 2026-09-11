@@ -2,9 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, FileEdit, Plus, Receipt } from 'lucide-react';
 import { ClientCombobox } from '@/components/crm/client-combobox';
 import { InvoiceTable } from '@/components/crm/invoices/invoice-table';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { Pagination } from '@/components/crm/pagination';
-import { StatCard } from '@/components/crm/stat-card';
+import { StatCard, StatStrip } from '@/components/crm/stat-card';
+import { Toolbar } from '@/components/crm/toolbar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -70,20 +72,20 @@ export default function InvoicesIndex({
     <>
       <Head title="Invoice" />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title="Invoice"
-          actions={
-            <Button asChild>
-              <Link href={create()}>
-                <Plus className="size-4" />
-                Buat invoice
-              </Link>
-            </Button>
-          }
-        />
+      <PageHeader
+        title="Invoice"
+        actions={
+          <Button asChild>
+            <Link href={create()}>
+              <Plus className="size-4" />
+              Buat invoice
+            </Link>
+          </Button>
+        }
+      />
 
-        <div className="grid gap-4 sm:grid-cols-3">
+      <PageBody>
+        <StatStrip>
           <StatCard
             label="Piutang berjalan"
             value={rupiahCompact(summary.outstanding)}
@@ -96,9 +98,9 @@ export default function InvoicesIndex({
             tone={summary.overdue > 0 ? 'danger' : 'default'}
           />
           <StatCard label="Masih draf" value={String(summary.draft)} icon={FileEdit} />
-        </div>
+        </StatStrip>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <Toolbar trailing={`${groups.total} klien`}>
           <ClientCombobox
             clients={filterClients}
             value={filters.filterClient}
@@ -109,7 +111,7 @@ export default function InvoicesIndex({
             value={filters.status || 'all'}
             onValueChange={(value) => applyFilters({ status: value === 'all' ? '' : value })}
           >
-            <SelectTrigger className="w-full sm:w-52">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Semua status" />
             </SelectTrigger>
             <SelectContent>
@@ -121,7 +123,7 @@ export default function InvoicesIndex({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </Toolbar>
 
         <InvoiceTable
           groups={orphans ? [orphans, ...groups.data] : groups.data}
@@ -132,7 +134,7 @@ export default function InvoicesIndex({
         />
 
         <Pagination meta={groups} />
-      </div>
+      </PageBody>
     </>
   );
 }

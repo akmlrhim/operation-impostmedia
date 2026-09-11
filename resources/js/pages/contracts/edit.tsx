@@ -1,8 +1,16 @@
 import { Head } from '@inertiajs/react';
 import { ContractForm } from '@/components/crm/contract-form';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { edit, index, show } from '@/routes/contracts';
-import type { Client, CompanyProfile, Contract, Option, ServiceOption } from '@/types/crm';
+import type {
+  Client,
+  CompanyProfile,
+  Contract,
+  Option,
+  ServiceOption,
+  UserOption,
+} from '@/types/crm';
 
 type Props = {
   contract: Contract;
@@ -11,6 +19,7 @@ type Props = {
   company: CompanyProfile;
   types: Option[];
   statuses: Option[];
+  users: UserOption[];
   billingCycles: Option[];
   aiScopePoints: boolean;
 };
@@ -23,15 +32,16 @@ export default function ContractEdit({
   types,
   statuses,
   billingCycles,
+  users,
   aiScopePoints,
 }: Props) {
   return (
     <>
       <Head title={`Ubah ${contract.number}`} />
 
-      <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
-        <PageHeader title={`Ubah ${contract.number}`} backHref={show(contract.id).url} />
+      <PageHeader title={`Ubah ${contract.number}`} backHref={show(contract.id).url} />
 
+      <PageBody className="mx-auto w-full max-w-5xl">
         <ContractForm
           contract={contract}
           suggestedNumber={contract.number}
@@ -40,11 +50,12 @@ export default function ContractEdit({
           company={company}
           types={types}
           statuses={statuses}
+          users={users}
           billingCycles={billingCycles}
           aiScopePoints={aiScopePoints}
           cancelHref={show(contract.id).url}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

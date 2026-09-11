@@ -1,6 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { FileSignature, Pencil, Receipt, Trash2 } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { AttachmentsCard } from '@/components/crm/attachments';
 import { ClientFormModal } from '@/components/crm/client-form-modal';
@@ -9,6 +8,7 @@ import {
   ClientInvoicesCard,
 } from '@/components/crm/clients/client-show-documents';
 import { useConfirm } from '@/components/crm/confirm-dialog';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { StatusBadge } from '@/components/crm/status-badge';
 import { Button } from '@/components/ui/button';
@@ -17,33 +17,17 @@ import { useRealtime } from '@/hooks/use-realtime';
 import { destroy, index, show } from '@/routes/clients';
 import { create as createContract } from '@/routes/contracts';
 import { create as createInvoice } from '@/routes/invoices';
-import type { Client, Contract, Invoice, Option } from '@/types/crm';
+import type { Client, Contract, Invoice, Option, UserOption } from '@/types/crm';
 
 type Props = {
   client: Client;
   contracts: Contract[];
   invoices: Invoice[];
   statuses: Option[];
+  users: UserOption[];
 };
 
-function Detail({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children || '-'}</dd>
-    </div>
-  );
-}
-
-export default function ClientShow({ client, contracts, invoices, statuses }: Props) {
+export default function ClientShow({ client, contracts, invoices, statuses, users }: Props) {
   useRealtime(
     ['clients', 'contracts', 'invoices', 'attachments'],
     ['client', 'contracts', 'invoices'],
@@ -56,89 +40,151 @@ export default function ClientShow({ client, contracts, invoices, statuses }: Pr
     <>
       <Head title={client.company_name} />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title={client.company_name}
-          actions={
-            <>
-              <Button variant="outline" onClick={() => setEditModal(true)}>
-                <Pencil className="size-4" />
-                Ubah
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href={createContract({ query: { client: client.id } })}>
-                  <FileSignature className="size-4" />
-                  Buat MoU
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href={createInvoice({ query: { client: client.id } })}>
-                  <Receipt className="size-4" />
-                  Buat invoice
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Hapus klien"
-                onClick={async () => {
-                  const confirmed = await confirm({
-                    title: `Hapus klien ${client.company_name}?`,
-                    description: 'MoU dan riwayat aktivitas klien ini ikut hilang dari daftar.',
-                    confirmLabel: 'Hapus klien',
-                    destructive: true,
-                  });
+      <PageHeader
+        title={client.company_name}
+        backHref={index().url}
+        description={client.city ?? undefined}
+        meta={<StatusBadge value={client.status} options={statuses} />}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setEditModal(true)}>
+              <Pencil className="size-4" />
+              Ubah
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={createContract({ query: { client: client.id } })}>
+                <FileSignature className="size-4" />
+                Buat MoU
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={createInvoice({ query: { client: client.id } })}>
+                <Receipt className="size-4" />
+                Buat invoice
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Hapus klien"
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: `Hapus klien ${client.company_name}?`,
+                  description: 'MoU dan riwayat aktivitas klien ini ikut hilang dari daftar.',
+                  confirmLabel: 'Hapus klien',
+                  destructive: true,
+                });
 
-                  if (confirmed) {
-                    router.delete(destroy(client.id));
-                  }
-                }}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </>
-          }
-        />
+                if (confirmed) {
+                  router.delete(destroy(client.id));
+                }
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </>
+        }
+      />
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <PageBody>
+        <div className="space-y-3">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Profil klien</CardTitle>
+              <CardTitle>Profil klien</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                <Detail label="Kode singkat" className="sm:col-span-2">
-                  {client.short_code}
-                </Detail>
-                <Detail label="Email">{client.email}</Detail>
-                <Detail label="Telepon">{client.phone}</Detail>
-                <Detail label="Alamat" className="sm:col-span-2">
-                  {client.address}
-                </Detail>
-                <Detail label="Kota">{client.city}</Detail>
-                <Detail label="Status">
-                  <StatusBadge value={client.status} options={statuses} />
-                </Detail>
-                <Detail label="Nama PIC">{client.contact_name}</Detail>
-                <Detail label="Jabatan PIC">{client.contact_position}</Detail>
-                <Detail label="Catatan" className="sm:col-span-2">
-                  {client.notes && <span className="whitespace-pre-line">{client.notes}</span>}
-                </Detail>
-              </dl>
+              <div className="overflow-x-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y">
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Kode singkat
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.short_code || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Email
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.email || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Telepon
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.phone || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Alamat
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.address || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Kota
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.city || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Nama PIC
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.contact_name || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Jabatan PIC
+                      </th>
+                      <td className="border-l border-border px-3 py-2">{client.contact_position || '-'}</td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Penanggung jawab
+                      </th>
+                      <td className="border-l border-border px-3 py-2">
+                        {client.assignees && client.assignees.length > 0 ? (
+                          <ul className="flex flex-wrap gap-1.5">
+                            {client.assignees.map((user) => (
+                              <li key={user.id}>
+                                <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs">
+                                  {user.name}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                        Catatan
+                      </th>
+                      <td className="border-l border-border px-3 py-2 whitespace-pre-line">
+                        {client.notes || '-'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
-            <ClientContractsCard contracts={contracts} />
-            <ClientInvoicesCard invoices={invoices} />
+          <ClientContractsCard contracts={contracts} />
+          <ClientInvoicesCard invoices={invoices} />
+          <AttachmentsCard type="clients" id={client.id} attachments={client.attachments ?? []} />
           </div>
-        </div>
-
-        <AttachmentsCard type="clients" id={client.id} attachments={client.attachments ?? []} />
-      </div>
+      </PageBody>
 
       {editModal && (
-        <ClientFormModal client={client} statuses={statuses} onClose={() => setEditModal(false)} />
+        <ClientFormModal
+          client={client}
+          statuses={statuses}
+          users={users}
+          onClose={() => setEditModal(false)}
+        />
       )}
 
       {confirmDialog}

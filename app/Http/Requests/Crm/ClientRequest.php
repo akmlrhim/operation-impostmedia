@@ -40,6 +40,8 @@ class ClientRequest extends FormRequest
             'contact_position' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::enum(ClientStatus::class)],
             'notes' => ['nullable', 'string'],
+            'assigned_to_ids' => ['nullable', 'array'],
+            'assigned_to_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 
@@ -52,6 +54,8 @@ class ClientRequest extends FormRequest
             'company_name' => 'nama perusahaan',
             'short_code' => 'kode singkat',
             'contact_name' => 'nama PIC',
+            'assigned_to_ids' => 'penanggung jawab',
+            'assigned_to_ids.*' => 'penanggung jawab',
         ];
     }
 }

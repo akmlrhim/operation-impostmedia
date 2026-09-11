@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/crm/confirm-dialog';
 import { DocumentEditor } from '@/components/crm/contracts/document-editor';
 import type { DocumentEditorHandle } from '@/components/crm/contracts/document-editor';
 import { DocumentToolbar } from '@/components/crm/contracts/document-toolbar';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { Button } from '@/components/ui/button';
 import { index, show } from '@/routes/contracts';
@@ -65,37 +66,36 @@ export default function ContractDocument({ contract, page, edited }: Props) {
     <>
       <Head title={`Dokumen ${contract.number}`} />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title={`Dokumen ${contract.number}`}
-          backHref={show(contract.id).url}
-          actions={
-            <div className="flex items-center gap-2">
-              {edited && (
-                <Button type="button" variant="outline" size="sm" onClick={revert}>
-                  <RotateCcw className="size-4" />
-                  Kembalikan ke template
-                </Button>
-              )}
-
-              <Button type="button" size="sm" disabled={!dirty || form.processing} onClick={save}>
-                <Save className="size-4" />
-                Simpan dokumen
+      <PageHeader
+        title={`Dokumen ${contract.number}`}
+        backHref={show(contract.id).url}
+        description={
+          edited
+            ? 'Dokumen ini sudah disunting sendiri dan tidak lagi mengikuti susunan bawaan.'
+            : 'Ketik langsung di halaman untuk menyunting isinya.'
+        }
+        actions={
+          <>
+            {edited && (
+              <Button type="button" variant="outline" size="sm" onClick={revert}>
+                <RotateCcw className="size-4" />
+                Kembalikan ke susunan bawaan
               </Button>
-            </div>
-          }
-        />
+            )}
 
-        <p className="text-sm text-muted-foreground">
-          {edited
-            ? 'Dokumen ini sudah disunting sendiri, jadi tidak lagi mengikuti susunan template. Perubahan pada template atau data MoU tidak masuk ke sini sampai dikembalikan.'
-            : 'Ketik langsung di halaman untuk menyunting isinya. Begitu disimpan, dokumen ini lepas dari susunan template dan yang tercetak adalah apa yang terlihat di sini.'}
-        </p>
+            <Button type="button" size="sm" disabled={!dirty || form.processing} onClick={save}>
+              <Save className="size-4" />
+              Simpan dokumen
+            </Button>
+          </>
+        }
+      />
 
+      <PageBody>
         <DocumentToolbar editor={editor} version={version} />
 
         <DocumentEditor page={page} onReady={onReady} onDirty={onDirty} onSelection={redraw} />
-      </div>
+      </PageBody>
 
       {confirmDialog}
     </>

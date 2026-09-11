@@ -6,7 +6,9 @@ use App\Enums\ClientStatus;
 use App\Models\Concerns\BroadcastsCrmChanges;
 use App\Models\Concerns\HasActivities;
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\HasOwners;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,12 +19,26 @@ use Illuminate\Support\Str;
  * @property string|null $short_code
  * @property string $company_name
  * @property ClientStatus $status
+ * @property int|null $created_by
+ * @property-read Collection<int, User> $assignees
  */
 class Client extends Model
 {
-    use BroadcastsCrmChanges, HasActivities, HasAttachments, SoftDeletes;
+    use BroadcastsCrmChanges, HasActivities, HasAttachments, HasOwners, SoftDeletes;
 
     protected $guarded = ['id'];
+
+    /**
+     * @return array{subject: string, label: string, url: string}
+     */
+    public function notificationMeta(): array
+    {
+        return [
+            'subject' => 'Klien',
+            'label' => $this->company_name,
+            'url' => route('clients.show', $this),
+        ];
+    }
 
     /**
      * @return array<string, string>

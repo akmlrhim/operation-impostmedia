@@ -3,41 +3,39 @@ import { cn } from '@/lib/utils';
 import type { Paginated } from '@/types/crm';
 
 export function Pagination<T>({ meta }: { meta: Paginated<T> }) {
-  if (meta.links.length <= 3) {
-    return null;
-  }
-
   return (
     <nav
       aria-label="Navigasi halaman"
-      className="flex flex-wrap items-center justify-between gap-3"
+      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-1.5"
     >
-      <p className="text-sm text-muted-foreground">
+      <p className="num text-xs text-muted-foreground">
         Menampilkan {meta.from ?? 0}–{meta.to ?? 0} dari {meta.total}
       </p>
 
-      <div className="flex flex-wrap gap-1">
-        {meta.links.map((link) =>
-          link.url === null ? (
-            <span
-              key={link.label}
-              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground/50"
-              dangerouslySetInnerHTML={{ __html: link.label }}
-            />
-          ) : (
-            <Link
-              key={link.label}
-              href={link.url}
-              preserveScroll
-              className={cn(
-                'rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-accent',
-                link.active && 'border-primary bg-primary text-primary-foreground hover:bg-primary',
-              )}
-              dangerouslySetInnerHTML={{ __html: link.label }}
-            />
-          ),
-        )}
-      </div>
+      {meta.links.length > 3 && (
+        <div className="flex flex-wrap items-center gap-0.5">
+          {meta.links.map((link) =>
+            link.url === null ? (
+              <span
+                key={link.label}
+                className="px-2 py-1 text-xs text-muted-foreground/40"
+                dangerouslySetInnerHTML={{ __html: link.label }}
+              />
+            ) : (
+              <Link
+                key={link.label}
+                href={link.url}
+                preserveScroll
+                className={cn(
+                  'min-w-7 rounded-sm px-2 py-1 text-center num text-xs transition-colors hover:bg-accent',
+                  link.active && 'bg-primary text-primary-foreground hover:bg-primary',
+                )}
+                dangerouslySetInnerHTML={{ __html: link.label }}
+              />
+            ),
+          )}
+        </div>
+      )}
     </nav>
   );
 }

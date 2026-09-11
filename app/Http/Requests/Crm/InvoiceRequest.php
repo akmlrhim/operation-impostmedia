@@ -32,6 +32,8 @@ class InvoiceRequest extends FormRequest
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'status' => ['required', Rule::enum(InvoiceStatus::class)],
             'notes' => ['nullable', 'string'],
+            'assigned_to_ids' => ['nullable', 'array'],
+            'assigned_to_ids.*' => ['integer', 'exists:users,id'],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.service_package_id' => ['nullable', 'exists:service_packages,id'],
@@ -51,6 +53,8 @@ class InvoiceRequest extends FormRequest
         return [
             'number' => 'nomor invoice',
             'client_id' => 'klien',
+            'assigned_to_ids' => 'penanggung jawab',
+            'assigned_to_ids.*' => 'penanggung jawab',
             'contract_id' => 'MoU terkait',
             'issue_date' => 'tanggal invoice',
             'due_date' => 'jatuh tempo',

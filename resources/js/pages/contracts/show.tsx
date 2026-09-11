@@ -8,6 +8,7 @@ import { ContractShowInvoicesCard } from '@/components/crm/contracts/contract-sh
 import { ContractShowScopeCard } from '@/components/crm/contracts/contract-show-scope-card';
 import { ContractShowSummaryCard } from '@/components/crm/contracts/contract-show-summary-card';
 import { ContractSignModal } from '@/components/crm/contracts/contract-sign-modal';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { useRealtime } from '@/hooks/use-realtime';
 import { destroy, index, show } from '@/routes/contracts';
@@ -47,21 +48,23 @@ export default function ContractShow({
     <>
       <Head title={contract.number} />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title={contract.title}
-          actions={
-            <ContractShowActions
-              contract={contract}
-              confirm={confirm}
-              onSign={() => setSignModal(true)}
-              onDelete={() => router.delete(destroy(contract.id))}
-            />
-          }
-        />
+      <PageHeader
+        title={contract.title}
+        backHref={index().url}
+        description={contract.number}
+        actions={
+          <ContractShowActions
+            contract={contract}
+            confirm={confirm}
+            onSign={() => setSignModal(true)}
+            onDelete={() => router.delete(destroy(contract.id))}
+          />
+        }
+      />
 
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-4">
+      <PageBody>
+        <div className="grid items-start gap-3 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-3">
             <ContractShowScopeCard contract={contract} />
 
             {clauses.length > 0 && (
@@ -74,7 +77,7 @@ export default function ContractShow({
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <ContractShowSummaryCard
               contract={contract}
               company={company}
@@ -91,7 +94,7 @@ export default function ContractShow({
           id={contract.id}
           attachments={contract.attachments ?? []}
         />
-      </div>
+      </PageBody>
 
       {signModal && (
         <ContractSignModal

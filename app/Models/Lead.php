@@ -8,6 +8,7 @@ use App\Enums\LeadTemperature;
 use App\Models\Concerns\BroadcastsCrmChanges;
 use App\Models\Concerns\HasActivities;
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\HasOwners;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -25,19 +26,22 @@ use Illuminate\Support\Carbon;
  * @property Carbon $date_in
  * @property string $company_name
  * @property string|null $industry
+ * @property string|null $vacancy_position
  * @property string $contact_name
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $region
  * @property LeadSource|null $source
  * @property string|null $pic
- * @property string|null $pic_impost
+ * @property int|null $created_by
+ * @property-read Collection<int, User> $assignees
  * @property-read Collection<int, ServicePackage> $servicePackages
  * @property-read Invoice|null $latestInvoice
  * @property string $estimated_value
  * @property Carbon|null $last_contact_date
  * @property Carbon|null $next_action_date
  * @property string|null $next_action
+ * @property Carbon|null $meeting_date
  * @property LeadTemperature $temperature
  * @property string|null $notes
  * @property string|null $folder_url
@@ -46,9 +50,21 @@ use Illuminate\Support\Carbon;
  */
 class Lead extends Model
 {
-    use BroadcastsCrmChanges, HasActivities, HasAttachments, SoftDeletes;
+    use BroadcastsCrmChanges, HasActivities, HasAttachments, HasOwners, SoftDeletes;
 
     protected $guarded = ['id'];
+
+    /**
+     * @return array{subject: string, label: string, url: string}
+     */
+    public function notificationMeta(): array
+    {
+        return [
+            'subject' => 'Lead',
+            'label' => $this->company_name,
+            'url' => route('leads.show', $this),
+        ];
+    }
 
     /**
      * @return array<string, string>
@@ -64,6 +80,7 @@ class Lead extends Model
             'date_in' => 'date',
             'last_contact_date' => 'date',
             'next_action_date' => 'date',
+            'meeting_date' => 'date',
         ];
     }
 

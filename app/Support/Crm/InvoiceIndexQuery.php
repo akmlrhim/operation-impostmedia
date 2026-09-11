@@ -35,6 +35,13 @@ class InvoiceIndexQuery
         $direction = $request->string('direction')->toString() === 'desc' ? 'desc' : 'asc';
 
         $matching = function (Builder|Relation $query) use ($status): void {
+            if ($status === InvoiceStatus::Overdue->value) {
+                $query->whereIn('invoices.status', InvoiceStatus::outstanding())
+                    ->where('invoices.due_date', '<', now()->toDateString());
+
+                return;
+            }
+
             $query->when($status !== '', fn ($q) => $q->where('invoices.status', $status));
         };
 

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Crm;
 
 use App\Actions\Crm\SyncInvoiceStatus;
+use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\PaymentRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Crm\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
@@ -20,6 +22,16 @@ class PaymentController extends Controller
         ]);
 
         $sync->handle($invoice);
+
+        Notifier::involved(
+            $invoice,
+            'invoice',
+            $invoice->number,
+            $invoice->refresh()->status === InvoiceStatus::Paid
+                ? 'Invoice sudah lunas'
+                : 'Pembayaran masuk',
+            route('invoices.show', $invoice),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pembayaran dicatat.']);
 

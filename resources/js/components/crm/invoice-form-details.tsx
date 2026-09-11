@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import type { InertiaForm } from '@inertiajs/react';
 import { TriangleAlert } from 'lucide-react';
+import { AssigneeField } from '@/components/crm/assignee-field';
 import { Field, FormGrid } from '@/components/crm/field';
 import type { InvoiceFormData } from '@/components/crm/invoice-form-types';
 import { DateField } from '@/components/ui/date-field';
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { show as showContract } from '@/routes/contracts';
-import type { Client, ContractOption, Option } from '@/types/crm';
+import type { Client, ContractOption, Option, UserOption } from '@/types/crm';
 
 export function InvoiceFormDetails({
   form,
@@ -23,6 +24,7 @@ export function InvoiceFormDetails({
   availableContracts,
   types,
   statuses,
+  users,
   onSelectClient,
   onNumberEdited,
   onSelectIssueDate,
@@ -33,6 +35,7 @@ export function InvoiceFormDetails({
   availableContracts: ContractOption[];
   types: Option[];
   statuses: Option[];
+  users: UserOption[];
   onSelectClient: (value: string) => void;
   onNumberEdited: () => void;
   onSelectIssueDate: (value: string) => void;
@@ -213,6 +216,12 @@ export function InvoiceFormDetails({
           placeholder="Pembayaran paling lambat 14 hari sejak invoice terbit."
         />
       </Field>
+      <AssigneeField
+        value={form.data.assigned_to_ids}
+        users={users}
+        error={form.errors.assigned_to_ids}
+        onChange={(value) => form.setData('assigned_to_ids', value)}
+      />
     </FormGrid>
   );
 }

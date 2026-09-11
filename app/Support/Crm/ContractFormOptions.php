@@ -24,6 +24,7 @@ class ContractFormOptions
             'types' => EnumOptions::from(ContractType::class),
             'billingCycles' => EnumOptions::from(BillingCycle::class),
             'aiScopePoints' => Groq::configured(),
+            'users' => UserOptions::assignable(),
         ];
     }
 }

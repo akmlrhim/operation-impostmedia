@@ -13,12 +13,7 @@ type Props = {
   stampUrl: string | null;
 };
 
-export default function CompanySettingsPage({
-  profile,
-  logoUrl,
-  signatureUrl,
-  stampUrl,
-}: Props) {
+export default function CompanySettingsPage({ profile, logoUrl, signatureUrl, stampUrl }: Props) {
   const form = useForm<CompanyFormData>({
     signature: null,
     stamp: null,
@@ -53,11 +48,7 @@ export default function CompanySettingsPage({
         }}
       >
         <CompanySettingsProfile profile={profile} logoUrl={logoUrl} />
-        <CompanySettingsBranding
-          form={form}
-          signatureUrl={signatureUrl}
-          stampUrl={stampUrl}
-        />
+        <CompanySettingsBranding form={form} signatureUrl={signatureUrl} stampUrl={stampUrl} />
 
         <Button type="submit" disabled={form.processing}>
           Simpan

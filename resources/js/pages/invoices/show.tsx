@@ -6,8 +6,10 @@ import { InvoiceShowActions } from '@/components/crm/invoices/invoice-show-actio
 import { InvoiceShowItemsCard } from '@/components/crm/invoices/invoice-show-items-card';
 import { InvoiceShowPaymentsCard } from '@/components/crm/invoices/invoice-show-payments-card';
 import { InvoiceShowSummaryCard } from '@/components/crm/invoices/invoice-show-summary-card';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { PaymentFormModal } from '@/components/crm/payment-form-modal';
+import { StatusBadge } from '@/components/crm/status-badge';
 import { useRealtime } from '@/hooks/use-realtime';
 import { stripQueryParams } from '@/lib/url';
 import { destroy, index, show } from '@/routes/invoices';
@@ -31,21 +33,23 @@ export default function InvoiceShow({ invoice, statuses, methods }: Props) {
     <>
       <Head title={invoice.number} />
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        <PageHeader
-          title={invoice.number}
-          actions={
-            <InvoiceShowActions
-              invoice={invoice}
-              confirm={confirm}
-              onPay={() => setPaymentModal(true)}
-              onDelete={() => router.delete(destroy(invoice.id))}
-            />
-          }
-        />
+      <PageHeader
+        title={invoice.number}
+        backHref={index().url}
+        meta={<StatusBadge value={invoice.status} options={statuses} />}
+        actions={
+          <InvoiceShowActions
+            invoice={invoice}
+            confirm={confirm}
+            onPay={() => setPaymentModal(true)}
+            onDelete={() => router.delete(destroy(invoice.id))}
+          />
+        }
+      />
 
-        <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          <div className="space-y-4">
+      <PageBody>
+        <div className="grid items-start gap-3 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-3">
             <InvoiceShowItemsCard invoice={invoice} />
             <InvoiceShowPaymentsCard invoice={invoice} methods={methods} confirm={confirm} />
           </div>
@@ -54,7 +58,7 @@ export default function InvoiceShow({ invoice, statuses, methods }: Props) {
         </div>
 
         <AttachmentsCard type="invoices" id={invoice.id} attachments={invoice.attachments ?? []} />
-      </div>
+      </PageBody>
 
       {paymentModal && (
         <PaymentFormModal

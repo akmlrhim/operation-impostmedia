@@ -117,11 +117,14 @@ class DashboardAttention
     /**
      * @return list<array{id: int, type: string, title: string, subject: string|null, user: string|null, at: string|null}>
      */
-    public static function activities(CarbonInterface $monthStart): array
+    public static function activities(?CarbonInterface $monthStart = null): array
     {
         $latest = Activity::query()
             ->with(['user:id,name', 'subject'])
-            ->whereBetween('created_at', [$monthStart, $monthStart->copy()->endOfMonth()])
+            ->when(
+                $monthStart !== null,
+                fn ($query) => $query->whereBetween('created_at', [$monthStart, $monthStart->copy()->endOfMonth()]),
+            )
             ->latest()
             ->limit(6)
             ->get();

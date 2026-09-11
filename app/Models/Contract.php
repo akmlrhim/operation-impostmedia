@@ -8,6 +8,7 @@ use App\Enums\ContractType;
 use App\Models\Concerns\BroadcastsCrmChanges;
 use App\Models\Concerns\HasActivities;
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\HasOwners;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,11 +43,23 @@ use Illuminate\Support\Facades\Storage;
  */
 class Contract extends Model
 {
-    use BroadcastsCrmChanges, HasActivities, HasAttachments, SoftDeletes;
+    use BroadcastsCrmChanges, HasActivities, HasAttachments, HasOwners, SoftDeletes;
 
     protected $guarded = ['id'];
 
     public const SIGNATURE_DISK = 'local';
+
+    /**
+     * @return array{subject: string, label: string, url: string}
+     */
+    public function notificationMeta(): array
+    {
+        return [
+            'subject' => 'MoU',
+            'label' => $this->number,
+            'url' => route('contracts.show', $this),
+        ];
+    }
 
     /**
      * @return array<string, string>

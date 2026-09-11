@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\GoogleAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use Laravel\Socialite\Facades\Socialite;
@@ -39,7 +38,7 @@ class GoogleLoginTest extends TestCase
         );
     }
 
-    public function test_a_returning_visitor_is_not_made_to_pick_their_account_again(): void
+    public function test_visitors_are_always_shown_the_account_chooser(): void
     {
         $user = User::factory()->create(['email' => 'dimas@operation.test']);
         $this->linkGoogleAccount($user, ['refresh_token' => 'refresh-token-lama']);
@@ -48,8 +47,8 @@ class GoogleLoginTest extends TestCase
             ->post(route('google.redirect'))
             ->headers->get('Location') ?? '';
 
-        $this->assertStringContainsString('login_hint=dimas%40operation.test', $target);
-        $this->assertStringNotContainsString('prompt=', $target);
+        $this->assertStringContainsString('prompt=consent+select_account', $target);
+        $this->assertStringNotContainsString('login_hint', $target);
     }
 
     /**
@@ -68,19 +67,6 @@ class GoogleLoginTest extends TestCase
         $this->assertStringContainsString('prompt=consent', $target);
     }
 
-    public function test_the_visitor_can_still_ask_for_the_account_chooser(): void
-    {
-        $user = User::factory()->create(['email' => 'dimas@operation.test']);
-        $this->linkGoogleAccount($user, ['refresh_token' => 'refresh-token-lama']);
-
-        $target = $this->withCookie('google_account_hint', 'dimas@operation.test')
-            ->post(route('google.redirect'), ['switch' => '1'])
-            ->headers->get('Location') ?? '';
-
-        $this->assertStringContainsString('prompt=consent+select_account', $target);
-        $this->assertStringNotContainsString('login_hint', $target);
-    }
-
     public function test_signing_in_remembers_the_account_for_the_next_visit(): void
     {
         User::factory()->create(['email' => 'dimas@operation.test']);
@@ -90,16 +76,6 @@ class GoogleLoginTest extends TestCase
         $this->get(route('google.callback'))
             ->assertRedirect(route('dashboard'))
             ->assertCookie('google_account_hint', 'dimas@operation.test');
-
-        Auth::logout();
-
-        $this->get(route('login'))->assertInertia(
-            fn (AssertableInertia $page) => $page->where('knownAccount', false),
-        );
-
-        $this->withCookie('google_account_hint', 'dimas@operation.test')
-            ->get(route('login'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('knownAccount', true));
     }
 
     public function test_a_registered_user_can_sign_in_and_their_token_is_stored(): void

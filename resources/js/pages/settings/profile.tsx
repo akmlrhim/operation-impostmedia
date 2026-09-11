@@ -21,14 +21,14 @@ export default function Profile({ googleAccount }: { googleAccount: GoogleAccoun
 
   return (
     <>
-      <Head title="Profile settings" />
+      <Head title="Profil saya" />
 
-      <h1 className="sr-only">Profile settings</h1>
+      <h1 className="sr-only">Profil saya</h1>
 
       <div className="space-y-6">
         <Heading
           variant="small"
-          title="Profile"
+          title="Profil"
           description="Ubah nama tampilan Anda di aplikasi ini"
         />
 
@@ -110,7 +110,7 @@ export default function Profile({ googleAccount }: { googleAccount: GoogleAccoun
 Profile.layout = {
   breadcrumbs: [
     {
-      title: 'Profile settings',
+      title: 'Profil saya',
       href: edit(),
     },
   ],

@@ -10,18 +10,18 @@ export function AgingCard({ aging }: { aging: { label: string; total: number; co
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Umur piutang saat ini</CardTitle>
-        <p className="text-2xl font-semibold">{rupiah(agingTotal)}</p>
+        <CardTitle>Umur piutang saat ini</CardTitle>
+        <p className="num text-xl font-semibold">{rupiah(agingTotal)}</p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {agingTotal === 0 ? (
           <p className="text-sm text-muted-foreground">
             Semua invoice sudah lunas. Tidak ada piutang berjalan.
           </p>
         ) : (
           <>
-            <div aria-hidden className="flex h-2.5 gap-0.5 overflow-hidden rounded-full">
+            <div aria-hidden className="flex h-2 gap-0.5 overflow-hidden rounded-full">
               {aging.map((bucket, index) =>
                 bucket.total > 0 ? (
                   <span
@@ -36,12 +36,12 @@ export function AgingCard({ aging }: { aging: { label: string; total: number; co
               )}
             </div>
 
-            <ul className="space-y-2.5">
+            <ul className="space-y-1.5">
               {aging.map((bucket, index) => (
                 <li
                   key={bucket.label}
                   className={cn(
-                    'flex items-center gap-2.5 text-sm',
+                    'flex items-center gap-2 text-[0.8125rem]',
                     bucket.total === 0 && 'text-muted-foreground',
                   )}
                 >
@@ -54,10 +54,10 @@ export function AgingCard({ aging }: { aging: { label: string; total: number; co
                     )}
                   />
                   <span className="min-w-0 truncate">{bucket.label}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  <span className="ml-auto shrink-0 num text-xs text-muted-foreground">
                     {bucket.count} inv
                   </span>
-                  <span className="shrink-0 font-medium">{rupiahCompact(bucket.total)}</span>
+                  <span className="shrink-0 num font-medium">{rupiahCompact(bucket.total)}</span>
                 </li>
               ))}
             </ul>

@@ -12,6 +12,7 @@ export type InvoiceFormData = {
   discount_amount: string;
   tax_percent: string;
   status: string;
+  assigned_to_ids: number[];
   notes: string;
   items: LineItem[];
 };

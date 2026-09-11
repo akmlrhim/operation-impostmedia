@@ -52,7 +52,6 @@ class LeadSheetColumnsTest extends TestCase
             'region' => 'Banjarmasin',
             'source' => 'referral',
             'pic' => 'Rahim',
-            'pic_impost' => 'Sari',
             'service_package_ids' => [$this->package->id],
             'estimated_value' => 96_000_000,
             'last_contact_date' => '2026-09-03',
@@ -70,7 +69,6 @@ class LeadSheetColumnsTest extends TestCase
         $this->assertSame('F&B', $lead->industry);
         $this->assertSame('Banjarmasin', $lead->region);
         $this->assertSame('Rahim', $lead->pic);
-        $this->assertSame('Sari', $lead->pic_impost);
         $this->assertSame([$this->package->id], $lead->servicePackages->pluck('id')->all());
         $this->assertSame('2026-09-03', $lead->last_contact_date->toDateString());
         $this->assertSame('2026-09-10', $lead->next_action_date->toDateString());
@@ -186,7 +184,6 @@ class LeadSheetColumnsTest extends TestCase
             'industry' => 'F&B',
             'region' => 'Banjarmasin',
             'pic' => 'Rahim',
-            'pic_impost' => 'Sari',
             'next_action' => 'Follow up',
             'next_action_date' => '2026-09-10',
             'folder_url' => 'https://drive.google.com/x',
@@ -202,7 +199,6 @@ class LeadSheetColumnsTest extends TestCase
                 ->where('leads.data.0.industry', 'F&B')
                 ->where('leads.data.0.region', 'Banjarmasin')
                 ->where('leads.data.0.pic', 'Rahim')
-                ->where('leads.data.0.pic_impost', 'Sari')
                 ->where('leads.data.0.service_packages.0.name', 'Paket NIB')
                 ->where('leads.data.0.last_invoice.number', 'IM-INV-0002')
                 ->where('leads.data.0.next_action', 'Follow up')
@@ -242,7 +238,6 @@ class LeadSheetColumnsTest extends TestCase
 
         $csv = $response->streamedContent();
 
-        $this->assertStringContainsString('PIC Impost', $csv);
         $this->assertStringContainsString('Temperature', $csv);
         $this->assertStringContainsString('Link Folder', $csv);
         $this->assertStringContainsString('Paket NIB', $csv);

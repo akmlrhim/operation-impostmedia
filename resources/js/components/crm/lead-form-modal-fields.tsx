@@ -1,6 +1,8 @@
 import type { InertiaForm } from '@inertiajs/react';
+import { AssigneeField } from '@/components/crm/assignee-field';
 import { Field, FormGrid } from '@/components/crm/field';
 import type { LeadFormData } from '@/components/crm/lead-form-modal-types';
+import { PicSelect } from '@/components/crm/pic-select';
 import { ServicePackageMultiCombobox } from '@/components/crm/service-package-multi-combobox';
 import { DateField } from '@/components/ui/date-field';
 import { Input } from '@/components/ui/input';
@@ -14,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate, rupiah } from '@/lib/format';
-import type { LeadCard, Option, ServiceOption } from '@/types/crm';
+import type { LeadCard, Option, ServiceOption, UserOption } from '@/types/crm';
 
 function masterTotal(services: ServiceOption[], packageIds: number[]): number | null {
   if (packageIds.length === 0) {
@@ -48,6 +50,7 @@ export function LeadFormModalFields({
   statuses,
   temperatures,
   services,
+  users,
 }: {
   form: InertiaForm<LeadFormData>;
   lead?: LeadCard;
@@ -56,6 +59,7 @@ export function LeadFormModalFields({
   statuses: Option[];
   temperatures: Option[];
   services: ServiceOption[];
+  users: UserOption[];
 }) {
   const masterPrice = masterTotal(services, form.data.service_package_ids);
 
@@ -85,6 +89,20 @@ export function LeadFormModalFields({
           value={form.data.industry}
           onChange={(e) => form.setData('industry', e.target.value)}
           placeholder="Masukkan bidang industri"
+        />
+      </Field>
+
+      <Field
+        label="Posisi loker"
+        htmlFor="vacancy_position"
+        hint="Posisi yang dibuka di lowongan kerja, kalau lead ini didapat dari loker."
+        error={form.errors.vacancy_position}
+      >
+        <Input
+          id="vacancy_position"
+          value={form.data.vacancy_position}
+          onChange={(e) => form.setData('vacancy_position', e.target.value)}
+          placeholder="Misal: Graphic Designer"
         />
       </Field>
 
@@ -164,22 +182,19 @@ export function LeadFormModalFields({
       </Field>
 
       <Field label="PIC" htmlFor="pic" error={form.errors.pic}>
-        <Input
+        <PicSelect
           id="pic"
           value={form.data.pic}
-          onChange={(e) => form.setData('pic', e.target.value)}
-          placeholder="Masukkan nama PIC"
+          onChange={(value) => form.setData('pic', value)}
         />
       </Field>
 
-      <Field label="PIC impost" htmlFor="pic_impost" error={form.errors.pic_impost}>
-        <Input
-          id="pic_impost"
-          value={form.data.pic_impost}
-          onChange={(e) => form.setData('pic_impost', e.target.value)}
-          placeholder="Masukkan nama PIC impost"
-        />
-      </Field>
+      <AssigneeField
+        value={form.data.assigned_to_ids}
+        users={users}
+        error={form.errors.assigned_to_ids}
+        onChange={(value) => form.setData('assigned_to_ids', value)}
+      />
 
       <Field
         label="Layanan dibutuhkan"
@@ -271,8 +286,16 @@ export function LeadFormModalFields({
         />
       </Field>
 
+      <Field label="Tanggal meeting" htmlFor="meeting_date" error={form.errors.meeting_date}>
+        <DateField
+          id="meeting_date"
+          value={form.data.meeting_date}
+          onChange={(value) => form.setData('meeting_date', value)}
+        />
+      </Field>
+
       <Field
-        label="Suhu lead"
+        label="Temperature"
         hint="Cold: baru masuk. Warm: sudah merespons. Hot: siap deal."
         error={form.errors.temperature}
       >

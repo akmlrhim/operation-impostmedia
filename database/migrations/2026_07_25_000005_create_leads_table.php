@@ -34,7 +34,7 @@ return new class extends Migration
             $table->string('source')->nullable();
 
             $table->string('pic')->nullable();
-            $table->string('pic_impost')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->decimal('estimated_value', 18, 2)->default(0);
 

@@ -5,7 +5,7 @@ export function ActivitiesCard({
   activities,
   period,
 }: {
-  period: string;
+  period?: string;
   activities: {
     id: number;
     type: string;
@@ -18,19 +18,21 @@ export function ActivitiesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Aktivitas {period}</CardTitle>
+        <CardTitle>{period ? `Aktivitas ${period}` : 'Aktivitas terbaru'}</CardTitle>
       </CardHeader>
 
-      <CardContent className="max-h-72 overflow-y-auto overscroll-contain">
+      <CardContent className="max-h-64 overflow-y-auto overscroll-contain">
         {activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Belum ada aktivitas pada periode ini.</p>
+          <p className="text-sm text-muted-foreground">
+            {period ? 'Belum ada aktivitas pada periode ini.' : 'Belum ada aktivitas tercatat.'}
+          </p>
         ) : (
-          <ol className="space-y-4">
+          <ol className="space-y-2.5">
             {activities.map((activity) => (
               <li key={activity.id} className="flex gap-3">
                 <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-border" />
                 <div className="min-w-0 space-y-0.5">
-                  <p className="truncate text-sm font-medium">{activity.title}</p>
+                  <p className="truncate text-[0.8125rem] font-medium">{activity.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {activity.type}
                     {activity.subject && ` · ${activity.subject}`}

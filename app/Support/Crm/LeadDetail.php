@@ -21,12 +21,14 @@ class LeadDetail
             'latestInvoice',
             'convertedClient:id,company_name',
             'attachments.uploader:id,name',
+            'assignees:id,name',
         ]);
 
         return [
             'lead' => [
                 ...LeadIndexQuery::card($lead),
                 'stage' => $lead->stage?->only(['id', 'name', 'color']),
+                'assignees' => $lead->assignees->map(fn ($user): array => $user->only(['id', 'name']))->values()->all(),
                 'services' => $lead->servicePackages
                     ->map(fn (ServicePackage $package): array => [
                         'id' => $package->id,

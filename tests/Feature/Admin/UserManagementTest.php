@@ -3,6 +3,8 @@
 namespace Tests\Feature\Admin;
 
 use App\Enums\UserRole;
+use App\Models\Lead;
+use App\Models\LeadStage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,14 +83,69 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $pending->id]);
     }
 
-    public function test_an_approved_user_is_deactivated_instead_of_deleted(): void
+    public function test_an_approved_user_can_be_deleted_and_their_work_stays(): void
     {
         $member = User::factory()->create(['role' => UserRole::Member]);
 
+        $lead = Lead::create([
+            'lead_stage_id' => LeadStage::create([
+                'name' => 'Prospek', 'slug' => 'prospek', 'color' => '#64748b', 'position' => 0, 'type' => 'open',
+            ])->id,
+            'company_name' => 'PT Ditinggal',
+            'contact_name' => 'Budi',
+            'created_by' => $member->id,
+        ]);
+        $lead->assignees()->sync([$member->id]);
+
         $this->actingAs($this->superuser())->delete(route('users.destroy', $member));
 
-        $this->assertDatabaseHas('users', ['id' => $member->id]);
-        $this->assertFalse($member->fresh()->is_active);
+        $this->assertDatabaseMissing('users', ['id' => $member->id]);
+
+        $lead->refresh();
+
+        $this->assertSame(0, $lead->assignees()->count());
+        $this->assertNull($lead->created_by);
+    }
+
+    public function test_nobody_can_delete_their_own_account_from_the_list(): void
+    {
+        $superuser = $this->superuser();
+
+        $this->actingAs($superuser)->delete(route('users.destroy', $superuser));
+
+        $this->assertDatabaseHas('users', ['id' => $superuser->id]);
+    }
+
+    public function test_the_last_superuser_cannot_be_deleted(): void
+    {
+        $superuser = $this->superuser();
+        $other = User::factory()->create(['role' => UserRole::Superuser]);
+
+        $this->actingAs($superuser)->delete(route('users.destroy', $other));
+        $this->assertDatabaseMissing('users', ['id' => $other->id]);
+
+        $administrator = User::factory()->create(['role' => UserRole::Administrator]);
+
+        $this->actingAs($administrator)->delete(route('users.destroy', $superuser))->assertForbidden();
+        $this->assertDatabaseHas('users', ['id' => $superuser->id]);
+    }
+
+    public function test_only_a_superuser_may_edit_or_delete_a_user(): void
+    {
+        $target = User::factory()->create(['role' => UserRole::Member]);
+
+        foreach ([UserRole::Administrator, UserRole::Manager, UserRole::Member] as $role) {
+            $actor = User::factory()->create(['role' => $role]);
+
+            $this->actingAs($actor)
+                ->put(route('users.update', $target), ['role' => 'manager', 'is_active' => true])
+                ->assertForbidden();
+
+            $this->actingAs($actor)->delete(route('users.destroy', $target))->assertForbidden();
+        }
+
+        $this->assertSame(UserRole::Member, $target->fresh()->role);
+        $this->assertDatabaseHas('users', ['id' => $target->id]);
     }
 
     public function test_an_unknown_role_is_rejected(): void

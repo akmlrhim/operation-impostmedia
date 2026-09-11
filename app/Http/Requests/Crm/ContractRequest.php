@@ -44,6 +44,8 @@ class ContractRequest extends FormRequest
             'first_party_name' => ['nullable', 'string', 'max:255'],
             'first_party_position' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::enum(ContractStatus::class)],
+            'assigned_to_ids' => ['nullable', 'array'],
+            'assigned_to_ids.*' => ['integer', 'exists:users,id'],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.service_package_id' => ['nullable', 'exists:service_packages,id'],
@@ -63,6 +65,8 @@ class ContractRequest extends FormRequest
         return [
             'number' => 'nomor MoU',
             'client_id' => 'klien',
+            'assigned_to_ids' => 'penanggung jawab',
+            'assigned_to_ids.*' => 'penanggung jawab',
             'title' => 'judul',
             'signed_date' => 'tanggal MoU',
             'items' => 'ruang lingkup pekerjaan',

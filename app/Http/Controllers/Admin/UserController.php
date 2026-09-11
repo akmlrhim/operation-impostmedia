@@ -16,6 +16,8 @@ class UserController extends Controller
 {
     public function index(Request $request): Response
     {
+        $superusers = User::query()->where('role', UserRole::Superuser)->count();
+
         $users = User::query()
             ->orderByRaw('approved_at is null desc')
             ->orderByDesc('created_at')
@@ -29,6 +31,7 @@ class UserController extends Controller
                 'approved_at' => $user->approved_at?->toIso8601String(),
                 'created_at' => $user->created_at?->toIso8601String(),
                 'is_self' => $user->is($request->user()),
+                'is_last_superuser' => $user->role === UserRole::Superuser && $superusers === 1,
             ]);
 
         return Inertia::render('users/index', [
@@ -91,24 +94,41 @@ class UserController extends Controller
             return back();
         }
 
-        if ($user->isApproved()) {
-            $user->forceFill(['is_active' => false])->save();
-
+        if ($this->isLastSuperuser($user)) {
             Inertia::flash('toast', [
-                'type' => 'success',
-                'message' => "Akses {$user->name} dicabut, datanya tetap disimpan.",
+                'type' => 'error',
+                'message' => 'Superuser terakhir tidak bisa dihapus. Angkat superuser lain dulu.',
             ]);
 
             return back();
         }
 
         $name = $user->name;
+        $wasWaiting = ! $user->isApproved();
 
+        $user->notifications()->delete();
         $user->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "Pendaftaran {$name} ditolak."]);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $wasWaiting
+                ? "Pendaftaran {$name} ditolak."
+                : "Akun {$name} dihapus. Lead, MoU, dan invoicenya tetap tersimpan.",
+        ]);
 
         return back();
+    }
+
+    private function isLastSuperuser(User $user): bool
+    {
+        if ($user->role !== UserRole::Superuser) {
+            return false;
+        }
+
+        return User::query()
+            ->where('role', UserRole::Superuser)
+            ->whereKeyNot($user->getKey())
+            ->doesntExist();
     }
 
     private function wouldLockOutSelf(UpdateUserRequest $request, User $user): bool

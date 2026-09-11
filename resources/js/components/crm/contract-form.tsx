@@ -16,6 +16,7 @@ import type {
   LineItem,
   Option,
   ServiceOption,
+  UserOption,
 } from '@/types/crm';
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
   types: Option[];
   statuses: Option[];
   billingCycles: Option[];
+  users: UserOption[];
   aiScopePoints: boolean;
   cancelHref: string;
 };
@@ -50,6 +52,7 @@ export function ContractForm({
   types,
   statuses,
   billingCycles,
+  users,
   aiScopePoints,
   cancelHref,
 }: Props) {
@@ -75,6 +78,7 @@ export function ContractForm({
     first_party_name: contract?.first_party_name ?? '',
     first_party_position: contract?.first_party_position ?? '',
     status: contract?.status ?? 'draft',
+    assigned_to_ids: contract?.assignees?.map((user) => user.id) ?? [],
     items: (contract?.items?.length ? contract.items : [{ ...emptyLineItem }]) as LineItem[],
   });
 
@@ -122,6 +126,7 @@ export function ContractForm({
           types={types}
           statuses={statuses}
           billingCycles={billingCycles}
+          users={users}
           onNumberEdited={() => {
             numberEdited.current = true;
           }}

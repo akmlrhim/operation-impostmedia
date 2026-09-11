@@ -18,6 +18,7 @@ use App\Models\Invoice;
 use App\Support\BulkDeleteSummary;
 use App\Support\Crm\InvoiceFormOptions;
 use App\Support\Crm\InvoiceIndexQuery;
+use App\Support\Crm\Notifier;
 use App\Support\Csv\CsvExport;
 use App\Support\DownloadName;
 use App\Support\EnumOptions;
@@ -76,6 +77,7 @@ class InvoiceController extends Controller
                 'items.servicePackage:id,name',
                 'payments.recorder:id,name',
                 'attachments.uploader:id,name',
+                'assignees:id,name',
             ]),
             'statuses' => EnumOptions::from(InvoiceStatus::class),
             'methods' => EnumOptions::from(PaymentMethod::class),
@@ -105,11 +107,16 @@ class InvoiceController extends Controller
         $data = $request->validated();
         $items = $data['items'];
         unset($data['items']);
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         $number = $data['number'] ?? null;
         unset($data['number']);
 
         $invoice = $creator->handle($data, $items, $number);
+
+        $invoice->assignees()->sync($assignedToIds);
+        $invoice->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Invoice {$invoice->number} dibuat."]);
 
@@ -130,6 +137,8 @@ class InvoiceController extends Controller
         $data = $request->validated();
         $items = $data['items'];
         unset($data['items']);
+        $assignedToIds = $data['assigned_to_ids'] ?? [];
+        unset($data['assigned_to_ids']);
 
         DB::transaction(function () use ($invoice, $data, $items): void {
             $invoice->update($data);
@@ -137,6 +146,9 @@ class InvoiceController extends Controller
             $this->syncItems($invoice, $items);
             $invoice->recalculate();
         });
+
+        $invoice->assignees()->sync($assignedToIds);
+        $invoice->notifyNewAssignees();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice diperbarui.']);
 
@@ -152,6 +164,14 @@ class InvoiceController extends Controller
         $sync->handle($invoice);
 
         $archiver->forInvoice($invoice->refresh());
+
+        Notifier::involved(
+            $invoice,
+            'invoice',
+            $invoice->number,
+            'Invoice dikirim ke klien',
+            route('invoices.show', $invoice),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice ditandai terkirim dan PDF diarsipkan.']);
 
@@ -187,6 +207,14 @@ class InvoiceController extends Controller
         ]);
 
         $sync->handle($invoice);
+
+        Notifier::involved(
+            $invoice,
+            'invoice',
+            $invoice->number,
+            'Invoice sudah lunas',
+            route('invoices.show', $invoice),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice ditandai lunas.']);
 

@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useConfirm } from '@/components/crm/confirm-dialog';
+import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { RowActions } from '@/components/crm/row-actions';
 import { ServiceFormModal } from '@/components/crm/service-form-modal';
@@ -54,26 +55,30 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
     <>
       <Head title="Layanan" />
 
-      <div className="flex flex-1 flex-col gap-6 p-4">
-        <PageHeader
-          title="Layanan"
-          actions={
-            <Button onClick={() => setServiceModal({})}>
-              <Plus className="size-4" />
-              Layanan baru
-            </Button>
-          }
-        />
+      <PageHeader
+        title="Layanan"
+        actions={
+          <Button onClick={() => setServiceModal({})}>
+            <Plus className="size-4" />
+            Layanan baru
+          </Button>
+        }
+      />
 
+      <PageBody className="gap-5">
         {groups.map((group) => (
           <section key={group.value} className="space-y-3">
             <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold tracking-wide uppercase">{group.label}</h2>
-              <span className="text-xs text-muted-foreground">{group.services.length} layanan</span>
+              <h2 className="text-[0.6875rem] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                {group.label}
+              </h2>
+              <span className="num text-xs text-muted-foreground">
+                {group.services.length} layanan
+              </span>
             </div>
 
             {group.services.length === 0 && (
-              <Card className="rounded-sm px-4 py-8 text-center text-muted-foreground">
+              <Card className="px-4 py-6 text-center text-sm text-muted-foreground">
                 Belum ada layanan {group.label}.
               </Card>
             )}
@@ -81,9 +86,9 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
             {group.services.map((service) => (
               <Card
                 key={service.id}
-                className={`gap-0 rounded-sm p-0 ${service.is_active ? '' : 'opacity-60'}`}
+                className={`gap-0 overflow-hidden p-0 ${service.is_active ? '' : 'opacity-60'}`}
               >
-                <div className="flex items-start justify-between gap-3 border-b p-4">
+                <div className="flex items-start justify-between gap-3 border-b bg-panel-header px-3 py-2">
                   <div className="min-w-0">
                     <button
                       type="button"
@@ -120,9 +125,9 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                   />
                 </div>
 
-                <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
+                <div className="flex flex-wrap gap-px bg-border">
                   {service.packages.length === 0 && (
-                    <p className="bg-card p-4 text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">
+                    <p className="flex-1 bg-card p-3 text-sm text-muted-foreground">
                       Belum ada paket.
                     </p>
                   )}
@@ -130,7 +135,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                   {service.packages.map((servicePackage) => (
                     <div
                       key={servicePackage.id}
-                      className={`space-y-2 bg-card p-4 ${servicePackage.is_active ? '' : 'opacity-60'}`}
+                      className={`min-w-64 flex-1 space-y-1.5 bg-card p-3 ${servicePackage.is_active ? '' : 'opacity-60'}`}
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-medium">{servicePackage.name}</span>
@@ -141,7 +146,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                         )}
                       </div>
 
-                      <div className="text-sm">
+                      <div className="num text-sm font-medium">
                         {rupiah(servicePackage.price)}
                         <span className="text-muted-foreground"> / {servicePackage.unit}</span>
                       </div>
@@ -168,7 +173,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
             ))}
           </section>
         ))}
-      </div>
+      </PageBody>
 
       {serviceModal && (
         <ServiceFormModal

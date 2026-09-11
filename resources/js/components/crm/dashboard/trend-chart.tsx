@@ -43,8 +43,8 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
     <Card className="lg:col-span-2">
       <CardHeader className="flex-row flex-wrap items-start gap-3">
         <div className="mr-auto space-y-1">
-          <CardTitle className="text-base">Tagihan vs uang masuk</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <CardTitle>Tagihan vs uang masuk</CardTitle>
+          <p className="text-xs text-muted-foreground">
             Enam bulan sampai {period}. Jarak antara keduanya adalah piutang yang menumpuk.
           </p>
         </div>
@@ -61,9 +61,9 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
       </CardHeader>
 
       <CardContent>
-        <div className="mb-4 flex flex-wrap items-center gap-4">
+        <div className="mb-3 flex flex-wrap items-center gap-4">
           {series.map((item) => (
-            <span key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
               <span aria-hidden className={cn('size-2.5 rounded-full', item.swatch)} />
               {item.name}
             </span>
@@ -98,8 +98,8 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
                     <th scope="row" className="py-2 text-left font-normal">
                       {point.label} {point.year}
                     </th>
-                    <td className="py-2 text-right">{rupiah(point.issued)}</td>
-                    <td className="py-2 text-right">{rupiah(point.collected)}</td>
+                    <td className="py-1.5 text-right num">{rupiah(point.issued)}</td>
+                    <td className="py-1.5 text-right num">{rupiah(point.collected)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -107,7 +107,10 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
           </div>
         ) : (
           <div className="flex gap-3">
-            <div aria-hidden className="relative h-56 w-14 shrink-0 text-xs text-muted-foreground">
+            <div
+              aria-hidden
+              className="relative h-48 w-14 shrink-0 num text-xs text-muted-foreground"
+            >
               {ticks.map((tick, index) => (
                 <span
                   key={tick}
@@ -120,7 +123,7 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="relative h-56">
+              <div className="relative h-48">
                 <div aria-hidden className="absolute inset-0 flex flex-col justify-between">
                   {ticks.map((tick) => (
                     <div
@@ -162,7 +165,7 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
                       {active === index && (
                         <span
                           className={cn(
-                            'pointer-events-none absolute bottom-full z-20 mb-2 w-max rounded-lg border bg-popover p-2.5 text-left shadow-md',
+                            'pointer-events-none absolute bottom-full z-20 mb-2 w-max rounded-md border bg-popover p-2.5 text-left shadow-md',
                             index === 0 && 'left-0',
                             index === last && 'right-0',
                             index !== 0 && index !== last && 'left-1/2 -translate-x-1/2',
@@ -181,7 +184,9 @@ export function TrendChart({ data, period }: { data: TrendPoint[]; period: strin
                                 className={cn('size-2 rounded-full', item.swatch)}
                               />
                               <span className="text-muted-foreground">{item.name}</span>
-                              <span className="ml-auto font-medium">{rupiah(point[item.id])}</span>
+                              <span className="ml-auto num font-medium">
+                                {rupiah(point[item.id])}
+                              </span>
                             </span>
                           ))}
                         </span>

@@ -21,6 +21,13 @@ const shortDateFormatter = new Intl.DateTimeFormat('id-ID', {
   month: 'short',
 });
 
+const longDateFormatter = new Intl.DateTimeFormat('id-ID', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
 const dateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
   day: 'numeric',
   month: 'short',
@@ -74,6 +81,14 @@ export function formatDateTime(value: string | null | undefined): string {
   }
 
   return dateTimeFormatter.format(new Date(value));
+}
+
+export function formatLongDate(value: string | null | undefined): string {
+  if (!value) {
+    return '-';
+  }
+
+  return longDateFormatter.format(new Date(value));
 }
 
 export function shortDate(value: string | null | undefined): string {
