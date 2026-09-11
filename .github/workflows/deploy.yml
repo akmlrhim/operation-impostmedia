@@ -12,32 +12,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer:v2
-          coverage: none
-
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Composer Dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install Composer Dependencies (Runner)
-        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -70,7 +49,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 65002
           timeout: 60s
-          command_timeout: 60m
+          command_timeout: 20m
           script: |
             set -euo pipefail
 
@@ -85,8 +64,6 @@ jobs:
 
             log() { echo "== $*"; }
             php_up() { $PHP "$APP/artisan" up --force >/dev/null 2>&1 || true; }
-
-            # Apa pun yang gagal di tengah script, aplikasi tetap dibuka lagi.
             trap php_up EXIT
 
             log "PHP: $($PHP -r 'echo PHP_VERSION;')"
@@ -123,13 +100,10 @@ jobs:
             log "Migrasi database..."
             $PHP artisan migrate --force
 
-            # Generate APP_KEY bila kosong. Versi grep sebelumnya (`^APP_KEY=$`)
-            # gagal mencocokkan `APP_KEY=""` atau baris berakhiran CRLF (\\r),
-            # sehingga key yang kosong tidak pernah ter-generate.
+            # Generate APP_KEY bila kosong.
             APP_KEY_VALUE=$(
               sed -n 's/^APP_KEY=//p' "$APP/.env" | head -n1 | tr -d '[:space:]"\r'
             )
-
             if [ -z "$APP_KEY_VALUE" ]; then
               log "APP_KEY kosong — generate otomatis..."
               $PHP artisan key:generate --force
@@ -141,9 +115,10 @@ jobs:
             log "Membangun cache config/rute/event/view..."
             $PHP artisan optimize
 
-            log "Me-restart queue worker..."
-            pkill -f "[a]rtisan queue:work" 2>/dev/null || true
-            ( setsid nohup $PHP artisan queue:work --daemon --tries=3 >/dev/null 2>&1 </dev/null & ) 2>/dev/null || true
+            # Worker di-restart via sinyal, bukan di-background manual di sesi SSH ini.
+            # Butuh Supervisor terpasang sekali di server (lihat catatan di bawah).
+            log "Me-restart queue worker (via Supervisor)..."
+            $PHP artisan queue:restart
 
             log "Membuka akses publik kembali..."
             php_up
