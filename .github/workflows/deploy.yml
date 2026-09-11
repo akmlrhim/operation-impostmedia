@@ -5,9 +5,14 @@ on:
     branches:
       - main
 
+concurrency:
+  group: deploy-to-ops
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 75
 
     steps:
       - name: Checkout
@@ -67,79 +72,81 @@ jobs:
           timeout: 60s
           command_timeout: 60m
           script: |
-            set -e
+            set -euo pipefail
+
             APP=/home/u465920647/domains/impostmedia.com/public_html/ops.impostmedia.com
             REPO=https://${{ secrets.GH_TOKEN }}@github.com/akmlrhim/operation-impostmedia.git
 
-            PHP=$(command -v php8.3 2>/dev/null \
-              || command -v php83 2>/dev/null \
-              || command -v php 2>/dev/null)
+            PHP=$(command -v php8.3 2>/dev/null || command -v php83 2>/dev/null || command -v php 2>/dev/null)
+            if [ -z "$PHP" ]; then
+              echo "!! PHP tidak ditemukan."
+              exit 1
+            fi
 
-            echo "Menggunakan PHP: $PHP ($($PHP -r 'echo PHP_VERSION;'))"
+            log() { echo "== $*"; }
+            php_up() { $PHP "$APP/artisan" up --force >/dev/null 2>&1 || true; }
 
-            # Pastikan ekstensi PHP yang dibutuhkan tersedia
-            $PHP -m | grep -qE 'pdo_mysql|pdo_sqlite|mbstring|openssl' \
-              && echo "Ekstensi PHP OK" \
-              || echo "!! Cek ekstensi PHP (pdo_mysql, mbstring, openssl)"
+            # Apa pun yang gagal di tengah script, aplikasi tetap dibuka lagi.
+            trap php_up EXIT
+
+            log "PHP: $($PHP -r 'echo PHP_VERSION;')"
 
             if [ ! -d "$APP/.git" ]; then
-              echo "Pertama kali — setup repository..."
-              mkdir -p $APP
-              cd $APP
-              git init
-              git remote add origin $REPO
-              git fetch origin main
-              git reset --hard origin/main
-
-              # Pastikan .env sudah dibuat manual; auto-generate APP_KEY bila kosong
-              if [ ! -f "$APP/.env" ]; then
-                echo "!! .env belum ada — buat manual dulu: cp .env.example .env"
-                exit 1
-              fi
-              grep -q '^APP_KEY=$' "$APP/.env" && {
-                $PHP artisan key:generate --force
-                echo "APP_KEY digenerate otomatis (kosong)."
-              } || echo "APP_KEY sudah terisi."
-
-              COMPOSER_MEMORY_LIMIT=-1 composer install \
-                --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
-
-              $PHP artisan package:discover --ansi
-              $PHP artisan migrate --force
-              $PHP artisan storage:link || true
-              chmod -R 775 storage bootstrap/cache
-              echo "Setup awal selesai."
-            else
-              echo "Update — pulling latest code..."
-              cd $APP
-              $PHP artisan down || true
-
-              git pull $REPO main
-              git reset --hard FETCH_HEAD
-
-              COMPOSER_MEMORY_LIMIT=-1 composer install \
-                --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
-
-              $PHP artisan package:discover --ansi
-              $PHP artisan migrate --force
-              $PHP artisan optimize:clear
+              log "Setup pertama — inisialisasi repository..."
+              mkdir -p "$APP"
+              cd "$APP"
+              git init -q
+              git remote add origin "$REPO"
             fi
 
-            cd $APP
-            $PHP artisan config:cache
-            $PHP artisan route:cache
-            $PHP artisan event:cache
-            $PHP artisan view:cache
-            chmod -R 775 storage bootstrap/cache
-
-            # Restart queue worker (Pusher/Laravel Echo + notifikasi)
-            if [ -x "$(command -v supervisorctl)" ]; then
-              supervisorctl restart laravel-worker:* || true
-            else
-              # Fallback: temukan proses queue lama & jalankan ulang di background
-              pkill -f "artisan queue:work" 2>/dev/null || true
-              nohup $PHP artisan queue:work --daemon --tries=3 >/dev/null 2>&1 </dev/null &
+            if [ ! -f "$APP/.env" ]; then
+              echo "!! $APP/.env belum ada — buat manual: cp .env.example .env && php artisan key:generate"
+              exit 1
             fi
 
-            $PHP artisan up
-            echo "Deploy sukses: $(date)"
+            log "Masuk maintenance mode..."
+            $PHP "$APP/artisan" down --retry=120 >/dev/null 2>&1 || true
+
+            cd "$APP"
+
+            log "Menarik kode terbaru..."
+            git fetch -q origin main
+            git reset --hard -q FETCH_HEAD
+
+            log "Menginstal dependensi Composer..."
+            COMPOSER_MEMORY_LIMIT=-1 composer install \
+              --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
+
+            log "package:discover"
+            $PHP artisan package:discover --ansi
+
+            log "Migrasi database..."
+            $PHP artisan migrate --force
+
+            # Generate APP_KEY bila kosong. Versi grep sebelumnya (`^APP_KEY=$`)
+            # gagal mencocokkan `APP_KEY=""` atau baris berakhiran CRLF (\\r),
+            # sehingga key yang kosong tidak pernah ter-generate.
+            APP_KEY_VALUE=$(
+              sed -n 's/^APP_KEY=//p' "$APP/.env" | head -n1 | tr -d '[:space:]"\r'
+            )
+
+            if [ -z "$APP_KEY_VALUE" ]; then
+              log "APP_KEY kosong — generate otomatis..."
+              $PHP artisan key:generate --force
+            fi
+
+            log "Memastikan storage:link ada..."
+            $PHP artisan storage:link || true
+
+            log "Membangun cache config/rute/event/view..."
+            $PHP artisan optimize
+
+            log "Me-restart queue worker..."
+            pkill -f "[a]rtisan queue:work" 2>/dev/null || true
+            ( setsid nohup $PHP artisan queue:work --daemon --tries=3 >/dev/null 2>&1 </dev/null & ) 2>/dev/null || true
+
+            log "Membuka akses publik kembali..."
+            php_up
+            trap - EXIT
+
+            log "Deploy selesai: $(date)"
