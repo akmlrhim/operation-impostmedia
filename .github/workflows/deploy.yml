@@ -30,6 +30,8 @@ jobs:
         run: |
           npm install
           npm run build
+        env:
+          VITE_APP_NAME: "Operation Impost Media"
 
       - name: Copy build ke server via SCP
         uses: appleboy/scp-action@v0.1.7
