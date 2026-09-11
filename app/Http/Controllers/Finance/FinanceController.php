@@ -50,9 +50,7 @@ class FinanceController extends Controller
             'month' => $monthStart->format('Y-m'),
             'months' => DashboardStats::months(),
             'range' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
-            'period' => $this->periodLabel($mode, $monthStart, $from, $to),
             'summary' => FinanceStats::summary($from, $to),
-            'chart' => FinanceStats::series($from, $to),
         ]);
     }
 

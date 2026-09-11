@@ -196,14 +196,14 @@ class LeadSheetColumnsTest extends TestCase
         $this->get(route('leads.index', ['tab' => 'table']))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('services')
-                ->where('leads.data.0.industry', 'F&B')
-                ->where('leads.data.0.region', 'Banjarmasin')
-                ->where('leads.data.0.pic', 'Rahim')
-                ->where('leads.data.0.service_packages.0.name', 'Paket NIB')
-                ->where('leads.data.0.last_invoice.number', 'IM-INV-0002')
-                ->where('leads.data.0.next_action', 'Follow up')
-                ->where('leads.data.0.folder_url', 'https://drive.google.com/x')
-                ->where('leads.data.0.temperature', 'warm')
+                ->where('stageTables.0.leads.0.industry', 'F&B')
+                ->where('stageTables.0.leads.0.region', 'Banjarmasin')
+                ->where('stageTables.0.leads.0.pic', 'Rahim')
+                ->where('stageTables.0.leads.0.service_packages.0.name', 'Paket NIB')
+                ->where('stageTables.0.leads.0.last_invoice.number', 'IM-INV-0002')
+                ->where('stageTables.0.leads.0.next_action', 'Follow up')
+                ->where('stageTables.0.leads.0.folder_url', 'https://drive.google.com/x')
+                ->where('stageTables.0.leads.0.temperature', 'warm')
                 ->etc());
     }
 
@@ -220,7 +220,7 @@ class LeadSheetColumnsTest extends TestCase
 
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'date_in', 'direction' => 'desc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('leads.data.0.company_name', 'PT Baru')
+                ->where('stageTables.0.leads.0.company_name', 'PT Baru')
                 ->etc());
     }
 

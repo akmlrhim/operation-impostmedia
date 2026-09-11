@@ -29,6 +29,7 @@ export function FinanceChart({ data, period }: { data: FinanceChartPoint[]; peri
   const ceiling = niceCeil(Math.max(...data.flatMap((point) => [point.income, point.expense]), 0));
   const ticks = [ceiling, ceiling / 2, 0];
   const last = data.length - 1;
+  const labelStep = Math.ceil(data.length / 12);
 
   return (
     <Card>
@@ -64,40 +65,69 @@ export function FinanceChart({ data, period }: { data: FinanceChartPoint[]; peri
             Belum ada transaksi pada periode ini.
           </p>
         ) : asTable ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th scope="col" className="py-2 text-xs font-semibold tracking-wide uppercase">
-                    Periode
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-2 text-right text-xs font-semibold tracking-wide uppercase"
-                  >
-                    Debit
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-2 text-right text-xs font-semibold tracking-wide uppercase"
-                  >
-                    Kredit
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((point) => (
-                  <tr key={point.key} className="border-b last:border-0">
-                    <th scope="row" className="py-2 text-left font-normal">
-                      {point.label}
-                    </th>
-                    <td className="py-1.5 text-right num">{rupiah(point.income)}</td>
-                    <td className="py-1.5 text-right num">{rupiah(point.expense)}</td>
-                  </tr>
+          (() => {
+            const midpoint = Math.ceil(data.length / 2);
+            const chunks = [data.slice(0, midpoint), data.slice(midpoint)].filter(
+              (chunk) => chunk.length > 0,
+            );
+
+            return (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {chunks.map((chunk, chunkIndex) => (
+                  <div key={chunkIndex} className="overflow-hidden rounded-md border border-border">
+                    <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
+                      <span className="text-sm font-semibold">{chunk[0].label}</span>
+                      <span aria-hidden className="text-muted-foreground">
+                        –
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {chunk[chunk.length - 1].label}
+                      </span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th
+                            scope="col"
+                            className="py-2 pl-3 text-xs font-semibold tracking-wide uppercase"
+                          >
+                            Periode
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-2 text-right text-xs font-semibold tracking-wide uppercase"
+                          >
+                            Debit
+                          </th>
+                          <th
+                            scope="col"
+                            className="py-2 pr-3 text-right text-xs font-semibold tracking-wide uppercase"
+                          >
+                            Kredit
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chunk.map((point) => (
+                          <tr key={point.key} className="border-b last:border-0">
+                            <th scope="row" className="py-2 pl-3 text-left font-normal">
+                              {point.label}
+                            </th>
+                            <td className="py-2 text-right num font-bold">
+                              {rupiah(point.income)}
+                            </td>
+                            <td className="py-2 pr-3 text-right num font-bold">
+                              {rupiah(point.expense)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            );
+          })()
         ) : (
           <div className="flex gap-3">
             <div
@@ -188,17 +218,25 @@ export function FinanceChart({ data, period }: { data: FinanceChartPoint[]; peri
               </div>
 
               <div className="mt-2 flex gap-1 sm:gap-2">
-                {data.map((point, index) => (
-                  <span
-                    key={point.key}
-                    className={cn(
-                      'flex-1 truncate text-center text-xs',
-                      index === last ? 'font-medium text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {point.label}
-                  </span>
-                ))}
+                {data.map((point, index) => {
+                  if (index % labelStep !== 0 && index !== last) {
+                    return <span key={point.key} aria-hidden className="flex-1" />;
+                  }
+
+                  return (
+                    <span
+                      key={point.key}
+                      className={cn(
+                        'flex-1 text-center text-xs whitespace-nowrap',
+                        index === last
+                          ? 'font-medium text-foreground'
+                          : 'text-foreground/70',
+                      )}
+                    >
+                      {point.label}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           </div>

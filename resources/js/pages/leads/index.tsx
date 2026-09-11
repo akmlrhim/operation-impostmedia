@@ -14,8 +14,8 @@ import { index } from '@/routes/leads';
 import type {
   LeadCard,
   LeadStageColumn,
+  LeadStageTable,
   Option,
-  Paginated,
   ServiceOption,
   UserOption,
 } from '@/types/crm';
@@ -23,8 +23,6 @@ import type {
 type Tab = 'kanban' | 'table';
 
 type StageOption = { id: number; name: string; color: string; type: string };
-
-type LeadRow = LeadCard & { stage: { id: number; name: string; color: string } | null };
 
 type TableFilters = {
   status: string;
@@ -37,7 +35,8 @@ type Props = {
   tab: Tab;
   stageOptions: StageOption[];
   stages?: LeadStageColumn[];
-  leads?: Paginated<LeadRow>;
+  stageTables?: LeadStageTable[];
+  total?: number;
   filters?: TableFilters;
   sources: Option[];
   statuses: Option[];
@@ -59,7 +58,8 @@ export default function LeadsIndex({
   tab,
   stageOptions,
   stages,
-  leads,
+  stageTables,
+  total,
   filters,
   sources,
   statuses,
@@ -68,7 +68,7 @@ export default function LeadsIndex({
   services,
   users,
 }: Props) {
-  useRealtime(['leads', 'lead-stages'], ['stages', 'leads']);
+  useRealtime(['leads', 'lead-stages'], ['stages', 'stageTables', 'total']);
 
   const [leadModal, setLeadModal] = useState<LeadModalState | null>(null);
   const [stageModal, setStageModal] = useState<StageModalState | null>(null);
@@ -151,9 +151,10 @@ export default function LeadsIndex({
           />
         )}
 
-        {tab === 'table' && leads && filters && (
+        {tab === 'table' && stageTables && filters && total !== undefined && (
           <LeadTableTab
-            leads={leads}
+            stageTables={stageTables}
+            total={total}
             filters={filters}
             stageOptions={stageOptions}
             statuses={statuses}

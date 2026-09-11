@@ -18,17 +18,18 @@ import {
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, relativeDueLabel, rupiah } from '@/lib/format';
 import { convert, destroy, destroyBulk, exportMethod as exportLeads, show } from '@/routes/leads';
-import type { LeadCard, Option } from '@/types/crm';
+import type { LeadCard, LeadStageTable, Option } from '@/types/crm';
 
 type LeadRow = LeadCard & { stage: { id: number; name: string; color: string } | null };
 
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 8;
 
 function Blank() {
   return <span className="text-muted-foreground">-</span>;
 }
 
 export function LeadTable({
+  stage,
   leads,
   statuses,
   temperatures,
@@ -37,6 +38,7 @@ export function LeadTable({
   onSort,
   onEdit,
 }: {
+  stage: LeadStageTable;
   leads: LeadRow[];
   statuses: Option[];
   temperatures: Option[];
@@ -67,6 +69,18 @@ export function LeadTable({
       />
 
       <Card className="overflow-hidden py-0">
+        <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-4 py-3">
+          <span
+            aria-hidden
+            className="size-2.5 rounded-full"
+            style={{ backgroundColor: stage.color ?? 'var(--border)' }}
+          />
+          <h3 className="text-sm font-semibold">{stage.name}</h3>
+          <span className="num rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            {leads.length}
+          </span>
+        </div>
+
         <Table className="min-w-3xl">
           <TableHeader>
             <TableRow>
@@ -90,12 +104,6 @@ export function LeadTable({
                 active={sort === 'contact_name'}
                 direction={direction}
                 onClick={() => onSort('contact_name')}
-              />
-              <SortableTableHead
-                label="Tahap"
-                active={sort === 'stage'}
-                direction={direction}
-                onClick={() => onSort('stage')}
               />
               <SortableTableHead
                 label="Temperature"
@@ -132,7 +140,7 @@ export function LeadTable({
                   colSpan={COLUMN_COUNT}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  Belum ada lead yang cocok.
+                  Belum ada lead pada tahap ini.
                 </TableCell>
               </TableRow>
             )}
@@ -168,20 +176,6 @@ export function LeadTable({
                         <div className="truncate text-xs text-muted-foreground">{lead.phone}</div>
                       )}
                     </div>
-                  ) : (
-                    <Blank />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {lead.stage ? (
-                    <span className="flex items-center gap-1.5 whitespace-nowrap">
-                      <span
-                        aria-hidden
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: lead.stage.color }}
-                      />
-                      {lead.stage.name}
-                    </span>
                   ) : (
                     <Blank />
                   )}

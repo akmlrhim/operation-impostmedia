@@ -75,8 +75,8 @@ class LeadTemperatureTest extends TestCase
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'temperature', 'direction' => 'asc']))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('leads.data.0.company_name', 'PT Dingin')
-                ->where('leads.data.1.company_name', 'PT Panas')
+                ->where('stageTables.0.leads.0.company_name', 'PT Dingin')
+                ->where('stageTables.0.leads.1.company_name', 'PT Panas')
                 ->etc());
     }
 

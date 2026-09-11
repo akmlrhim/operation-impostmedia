@@ -1315,8 +1315,9 @@ class CrmFlowTest extends TestCase
         $this->get(route('leads.index', ['tab' => 'table']))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('tab', 'table')
-                ->has('leads')
-                ->missing('stages')
+                ->has('stageTables')
+                ->missing('leads')
+                ->where('total', 1)
                 ->has('stageOptions'));
     }
 
@@ -1330,8 +1331,9 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('leads.index', ['tab' => 'table', 'filter_stage' => $prospek->id]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('leads.data', 1)
-                ->where('leads.data.0.id', $inProspek->id));
+                ->has('stageTables', 1)
+                ->where('stageTables.0.id', $prospek->id)
+                ->where('stageTables.0.leads.0.id', $inProspek->id));
     }
 
     public function test_leads_table_tab_can_be_sorted_by_estimated_value(): void
@@ -1351,13 +1353,13 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'estimated_value', 'direction' => 'asc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('leads.data.0.company_name', 'PT Murah')
-                ->where('leads.data.1.company_name', 'PT Mahal'));
+                ->where('stageTables.0.leads.0.company_name', 'PT Murah')
+                ->where('stageTables.0.leads.1.company_name', 'PT Mahal'));
 
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'estimated_value', 'direction' => 'desc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('leads.data.0.company_name', 'PT Mahal')
-                ->where('leads.data.1.company_name', 'PT Murah'));
+                ->where('stageTables.0.leads.0.company_name', 'PT Mahal')
+                ->where('stageTables.0.leads.1.company_name', 'PT Murah'));
     }
 
     public function test_leads_table_tab_can_be_sorted_by_stage_position(): void
@@ -1372,8 +1374,9 @@ class CrmFlowTest extends TestCase
 
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'stage', 'direction' => 'asc']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('leads.data.0.company_name', 'PT Prospek')
-                ->where('leads.data.1.company_name', 'PT Negosiasi'));
+                ->has('stageTables', 2)
+                ->where('stageTables.0.leads.0.company_name', 'PT Prospek')
+                ->where('stageTables.1.leads.0.company_name', 'PT Negosiasi'));
     }
 
     public function test_leads_table_tab_ignores_invalid_status_and_sort_values(): void
@@ -1385,7 +1388,7 @@ class CrmFlowTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('filters.status', '')
-                ->has('leads.data', 1));
+                ->where('total', 1));
 
         $this->get(route('leads.index', ['tab' => 'table', 'sort' => 'id); drop table leads; --']))
             ->assertOk();

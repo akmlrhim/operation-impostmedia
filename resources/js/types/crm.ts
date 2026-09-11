@@ -84,6 +84,15 @@ export type LeadStageColumn = {
   leads: LeadCard[];
 };
 
+export type LeadStageTable = {
+  id: number | null;
+  name: string;
+  color: string | null;
+  type: string | null;
+  count: number;
+  leads: (LeadCard & { stage: { id: number; name: string; color: string } | null })[];
+};
+
 export type AttachmentOwner = 'leads' | 'clients' | 'contracts' | 'invoices';
 
 export type AttachmentItem = {

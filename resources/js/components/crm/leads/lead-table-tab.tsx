@@ -1,6 +1,6 @@
 import { LeadTable } from '@/components/crm/leads/lead-table';
-import { Pagination } from '@/components/crm/pagination';
 import { Toolbar } from '@/components/crm/toolbar';
+import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -8,9 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { LeadCard, Option, Paginated } from '@/types/crm';
-
-type LeadRow = LeadCard & { stage: { id: number; name: string; color: string } | null };
+import type { LeadStageTable, Option } from '@/types/crm';
 
 type StageOption = { id: number; name: string; color: string; type: string };
 
@@ -22,7 +20,8 @@ type TableFilters = {
 };
 
 export function LeadTableTab({
-  leads,
+  stageTables,
+  total,
   filters,
   stageOptions,
   statuses,
@@ -32,7 +31,8 @@ export function LeadTableTab({
   onSort,
   onEdit,
 }: {
-  leads: Paginated<LeadRow>;
+  stageTables: LeadStageTable[];
+  total: number;
   filters: TableFilters;
   stageOptions: StageOption[];
   statuses: Option[];
@@ -40,11 +40,11 @@ export function LeadTableTab({
   onFilterStage: (stageId: number | null) => void;
   onFilterStatus: (status: string) => void;
   onSort: (column: string) => void;
-  onEdit: (lead: LeadRow) => void;
+  onEdit: (lead: LeadStageTable['leads'][number]) => void;
 }) {
   return (
-    <>
-      <Toolbar trailing={`${leads.total} lead`}>
+    <div className="flex flex-col gap-3">
+      <Toolbar trailing={`${total} lead`}>
         <Select
           value={filters.filterStage ? String(filters.filterStage) : 'all'}
           onValueChange={(value) => onFilterStage(value === 'all' ? null : Number(value))}
@@ -80,17 +80,25 @@ export function LeadTableTab({
         </Select>
       </Toolbar>
 
-      <LeadTable
-        leads={leads.data}
-        statuses={statuses}
-        temperatures={temperatures}
-        sort={filters.sort}
-        direction={filters.direction}
-        onSort={onSort}
-        onEdit={onEdit}
-      />
-
-      <Pagination meta={leads} />
-    </>
+      {total === 0 ? (
+        <Card className="py-8 text-center text-sm text-muted-foreground">
+          Belum ada lead yang cocok.
+        </Card>
+      ) : (
+        stageTables.map((stage) => (
+          <LeadTable
+            key={stage.id ?? 'none'}
+            stage={stage}
+            leads={stage.leads}
+            statuses={statuses}
+            temperatures={temperatures}
+            sort={filters.sort}
+            direction={filters.direction}
+            onSort={onSort}
+            onEdit={onEdit}
+          />
+        ))
+      )}
+    </div>
   );
 }

@@ -5,9 +5,7 @@ import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { Pagination } from '@/components/crm/pagination';
 import { Toolbar } from '@/components/crm/toolbar';
-import { FinanceChart } from '@/components/finance/finance-chart';
 import { FinanceFormModal } from '@/components/finance/finance-form-modal';
-import { FinanceSummaryCards } from '@/components/finance/finance-summary';
 import { FinanceTable } from '@/components/finance/finance-table';
 import { Button } from '@/components/ui/button';
 import { DateField } from '@/components/ui/date-field';
@@ -23,7 +21,7 @@ import { useRealtime } from '@/hooks/use-realtime';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/finance';
 import type { Option, Paginated } from '@/types/crm';
-import type { FinanceChartPoint, FinanceSummary, FinanceTransaction } from '@/types/finance';
+import type { FinanceSummary, FinanceTransaction } from '@/types/finance';
 
 type Filters = {
   type: string;
@@ -40,9 +38,7 @@ type Props = {
   month: string;
   months: { value: string; label: string }[];
   range: { from: string; to: string };
-  period: string;
   summary: FinanceSummary;
-  chart: FinanceChartPoint[];
 };
 
 export default function FinanceIndex({
@@ -53,9 +49,7 @@ export default function FinanceIndex({
   month,
   months,
   range,
-  period,
   summary,
-  chart,
 }: Props) {
   useRealtime(['finance-transactions']);
 
@@ -166,10 +160,6 @@ export default function FinanceIndex({
       />
 
       <PageBody>
-        <FinanceSummaryCards summary={summary} period={period} />
-
-        <FinanceChart data={chart} period={period} />
-
         <Toolbar trailing={`${transactions.total} transaksi`}>
           <Select
             value={filters.type || 'all'}

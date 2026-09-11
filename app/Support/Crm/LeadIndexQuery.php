@@ -6,7 +6,6 @@ use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadStage;
 use App\Models\ServicePackage;
-use App\Support\ListPage;
 use Illuminate\Http\Request;
 
 class LeadIndexQuery
@@ -67,34 +66,72 @@ class LeadIndexQuery
         $sort = $request->string('sort')->toString();
         $direction = $request->string('direction')->toString() === 'desc' ? 'desc' : 'asc';
 
-        $leads = Lead::query()
+        [$withinSort, $withinDirection] = $sort !== '' && $sort !== 'stage' && array_key_exists($sort, self::SORTABLE)
+            ? [self::SORTABLE[$sort], $direction]
+            : ['leads.position', 'asc'];
+
+        $rows = Lead::query()
             ->when($filterStageId, fn ($q) => $q->where('lead_stage_id', $filterStageId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->with(self::RELATIONS);
+            ->with(self::RELATIONS)
+            ->orderBy($withinSort, $withinDirection)
+            ->get();
 
-        if (array_key_exists($sort, self::SORTABLE)) {
-            if ($sort === 'stage') {
-                $leads->leftJoin('lead_stages', 'lead_stages.id', '=', 'leads.lead_stage_id')
-                    ->select('leads.*');
-            }
+        $grouped = $rows->groupBy(fn (Lead $lead): string => (string) $lead->lead_stage_id);
 
-            $leads->orderBy(self::SORTABLE[$sort], $direction);
-        } else {
-            $leads->latest('leads.id');
+        $stages = array_values(LeadStage::query()
+            ->orderBy('position')
+            ->get(['id', 'name', 'color', 'type'])
+            ->filter(fn (LeadStage $stage): bool => $grouped->has((string) $stage->id))
+            ->map(fn (LeadStage $stage): array => [
+                'id' => $stage->id,
+                'name' => $stage->name,
+                'color' => $stage->color,
+                'type' => $stage->type->value,
+                'count' => (int) $grouped->get((string) $stage->id)->count(),
+                'leads' => $grouped->get((string) $stage->id)->map(
+                    fn (Lead $lead): array => self::tableRow($lead)
+                )->all(),
+            ])
+            ->all());
+
+        if ($grouped->has('')) {
+            $leads = $grouped->get('');
+
+            $stages[] = [
+                'id' => null,
+                'name' => 'Tanpa tahap',
+                'color' => null,
+                'type' => null,
+                'count' => (int) $leads->count(),
+                'leads' => $leads->map(fn (Lead $lead): array => self::tableRow($lead))->all(),
+            ];
         }
 
         return [
-            'leads' => ListPage::of($leads)->through(fn (Lead $lead): array => [
-                ...self::card($lead),
-                'stage' => $lead->stage?->only(['id', 'name', 'color']),
-                'assignees' => $lead->assignees->map(fn ($user): array => $user->only(['id', 'name']))->values()->all(),
-            ]),
+            'stageTables' => $stages,
+            'total' => $rows->count(),
             'filters' => [
                 'status' => $status,
                 'filterStage' => $filterStageId,
                 'sort' => $sort,
                 'direction' => $direction,
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function tableRow(Lead $lead): array
+    {
+        return [
+            ...self::card($lead),
+            'stage' => $lead->stage?->only(['id', 'name', 'color']),
+            'assignees' => $lead->assignees
+                ->map(fn ($user): array => $user->only(['id', 'name']))
+                ->values()
+                ->all(),
         ];
     }
 

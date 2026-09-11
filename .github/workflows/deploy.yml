@@ -89,11 +89,15 @@ jobs:
               git fetch origin main
               git reset --hard origin/main
 
-              # Buat .env dari template jika belum ada
+              # Pastikan .env sudah dibuat manual; auto-generate APP_KEY bila kosong
               if [ ! -f "$APP/.env" ]; then
-                cp $APP/.env.example $APP/.env
-                echo "Silakan isi .env (APP_KEY, DB, Pusher) secara manual."
+                echo "!! .env belum ada — buat manual dulu: cp .env.example .env"
+                exit 1
               fi
+              grep -q '^APP_KEY=$' "$APP/.env" && {
+                $PHP artisan key:generate --force
+                echo "APP_KEY digenerate otomatis (kosong)."
+              } || echo "APP_KEY sudah terisi."
 
               COMPOSER_MEMORY_LIMIT=-1 composer install \
                 --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
