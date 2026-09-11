@@ -50,7 +50,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 65002
           script: |
-            APP=/home/u465920647/domains/ops.impostmedia.com/public_html
+            APP=/home/u465920647/domains/impostmedia.com/public_html/ops.impostmedia.com
             REPO=https://${{ secrets.GH_TOKEN }}@github.com/akmlrhim/operation-impostmedia.git
 
             PHP=$(command -v php8.3 2>/dev/null \
