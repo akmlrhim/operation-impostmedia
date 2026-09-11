@@ -5,30 +5,31 @@ on:
     branches:
       - main
 
-concurrency:
-  group: deploy-to-ops
-  cancel-in-progress: false
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Install Composer Dependencies (Runner)
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
 
-      - name: Install NPM Dependencies
-        run: npm ci
-
-      - name: Build Tailwind/Vite
-        run: npm run build
+      - name: Install NPM & Build Tailwind/Vite
+        run: |
+          npm install
+          npm run build
 
       - name: Copy build ke server via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -48,80 +49,72 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 65002
-          timeout: 60s
-          command_timeout: 20m
           script: |
-            set -euo pipefail
-
-            APP=/home/u465920647/domains/impostmedia.com/public_html/ops.impostmedia.com
+            APP=/home/u465920647/domains/ops.impostmedia.com/public_html
             REPO=https://${{ secrets.GH_TOKEN }}@github.com/akmlrhim/operation-impostmedia.git
 
-            PHP=$(command -v php8.3 2>/dev/null || command -v php83 2>/dev/null || command -v php 2>/dev/null)
-            if [ -z "$PHP" ]; then
-              echo "!! PHP tidak ditemukan."
-              exit 1
-            fi
+            PHP=$(command -v php8.3 2>/dev/null \
+              || command -v php83 2>/dev/null \
+              || command -v php 2>/dev/null)
 
-            log() { echo "== $*"; }
-            php_up() { $PHP "$APP/artisan" up --force >/dev/null 2>&1 || true; }
-            trap php_up EXIT
-
-            log "PHP: $($PHP -r 'echo PHP_VERSION;')"
+            echo "Menggunakan PHP: $PHP ($($PHP -r 'echo PHP_VERSION;'))"
 
             if [ ! -d "$APP/.git" ]; then
-              log "Setup pertama — inisialisasi repository..."
-              mkdir -p "$APP"
-              cd "$APP"
-              git init -q
-              git remote add origin "$REPO"
+              echo "Pertama kali — setup repository..."
+              mkdir -p $APP
+              cd $APP
+              git init
+              git remote add origin $REPO
+              git fetch origin main
+              git reset --hard origin/main
+
+              COMPOSER_MEMORY_LIMIT=-1 composer install \
+                --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
+
+              $PHP artisan package:discover --ansi
+              $PHP artisan migrate --force
+              $PHP artisan storage:link || true
+              chmod -R 775 storage bootstrap/cache
+              echo "Setup awal selesai."
+            else
+              echo "Update — pulling latest code..."
+              cd $APP
+              $PHP artisan down || true
+              trap "cd $APP && $PHP artisan up" EXIT
+
+              git remote set-url origin $REPO
+              git fetch origin main
+              git reset --hard origin/main
+
+              COMPOSER_MEMORY_LIMIT=-1 composer install \
+                --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
+
+              $PHP artisan package:discover --ansi
+              $PHP artisan migrate --force
+              $PHP artisan optimize:clear
             fi
 
-            if [ ! -f "$APP/.env" ]; then
-              echo "!! $APP/.env belum ada — buat manual: cp .env.example .env && php artisan key:generate"
-              exit 1
-            fi
+            cd $APP
 
-            log "Masuk maintenance mode..."
-            $PHP "$APP/artisan" down --retry=120 >/dev/null 2>&1 || true
-
-            cd "$APP"
-
-            log "Menarik kode terbaru..."
-            git fetch -q origin main
-            git reset --hard -q FETCH_HEAD
-
-            log "Menginstal dependensi Composer..."
-            COMPOSER_MEMORY_LIMIT=-1 composer install \
-              --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-progress
-
-            log "package:discover"
-            $PHP artisan package:discover --ansi
-
-            log "Migrasi database..."
-            $PHP artisan migrate --force
-
-            # Generate APP_KEY bila kosong.
-            APP_KEY_VALUE=$(
-              sed -n 's/^APP_KEY=//p' "$APP/.env" | head -n1 | tr -d '[:space:]"\r'
-            )
-            if [ -z "$APP_KEY_VALUE" ]; then
-              log "APP_KEY kosong — generate otomatis..."
+            # Pastikan APP_KEY tersedia — generate hanya jika belum ada
+            # (regenerate tiap deploy akan merusak session & data terenkripsi)
+            if [ -f .env ] && ! grep -q '^APP_KEY=base64:' .env; then
+              echo "APP_KEY belum ada — generate key baru..."
               $PHP artisan key:generate --force
+            else
+              echo "APP_KEY sudah ada — lewati generate."
             fi
 
-            log "Memastikan storage:link ada..."
-            $PHP artisan storage:link || true
+            # Symlink storage (public/storage -> storage/app/public)
+            $PHP artisan storage:link --force 2>/dev/null || \
+              ln -sfn $APP/storage/app/public $APP/public/storage 2>/dev/null || \
+              true
 
-            log "Membangun cache config/rute/event/view..."
-            $PHP artisan optimize
-
-            # Worker di-restart via sinyal, bukan di-background manual di sesi SSH ini.
-            # Butuh Supervisor terpasang sekali di server (lihat catatan di bawah).
-            log "Me-restart queue worker (via Supervisor)..."
-            $PHP artisan queue:restart
-
-            log "Membuka akses publik kembali..."
-            php_up
+            $PHP artisan config:cache
+            $PHP artisan route:cache
+            $PHP artisan event:cache
+            $PHP artisan view:cache
+            chmod -R 775 storage bootstrap/cache
             trap - EXIT
-
-            log "Deploy selesai: $(date)"
+            $PHP artisan up
+            echo "Deploy sukses: $(date)"
