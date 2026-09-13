@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/crm/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { invoice as createInvoice } from '@/routes/contracts';
 import { show as showInvoice } from '@/routes/invoices';
 import type { Contract } from '@/types/crm';
@@ -16,13 +17,14 @@ export function ContractShowInvoicesCard({
   invoiceBlocker: string | null;
 }) {
   const invoices = contract.invoices ?? [];
+  const can = useCan();
 
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center gap-3">
         <CardTitle className="mr-auto text-base">Invoice terkait</CardTitle>
 
-        {invoiceBlocker === null && (
+        {can['approve-documents'] && invoiceBlocker === null && (
           <Button
             size="sm"
             variant="outline"

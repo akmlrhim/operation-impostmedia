@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/crm/page-header';
 import { TabNav } from '@/components/crm/tab-nav';
 import { Button } from '@/components/ui/button';
 import { useRealtime } from '@/hooks/use-realtime';
+import { useCan } from '@/lib/use-can';
 import { index } from '@/routes/leads';
 import type {
   LeadCard,
@@ -70,6 +71,7 @@ export default function LeadsIndex({
 }: Props) {
   useRealtime(['leads', 'lead-stages'], ['stages', 'stageTables', 'total']);
 
+  const can = useCan();
   const [leadModal, setLeadModal] = useState<LeadModalState | null>(null);
   const [stageModal, setStageModal] = useState<StageModalState | null>(null);
 
@@ -112,7 +114,7 @@ export default function LeadsIndex({
         title="Leads"
         actions={
           <>
-            {tab === 'kanban' && (
+            {tab === 'kanban' && can['manage-master-data'] && (
               <Button variant="outline" onClick={() => setStageModal({})}>
                 <Columns3 className="size-4" />
                 Kolom baru

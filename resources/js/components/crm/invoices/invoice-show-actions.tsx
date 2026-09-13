@@ -3,6 +3,7 @@ import { BadgeCheck, Ban, Download, Pencil, Plus, Send, Trash2 } from 'lucide-re
 import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { edit, pdf, send, settle, voidMethod as voidInvoice } from '@/routes/invoices';
 import type { Invoice } from '@/types/crm';
 
@@ -20,10 +21,11 @@ export function InvoiceShowActions({
   const balance = Number(invoice.balance_due);
   const isDraft = invoice.status === 'draft';
   const isVoid = invoice.status === 'void';
+  const can = useCan();
 
   return (
     <>
-      {isDraft && (
+      {isDraft && can['manage-finance'] && (
         <>
           <Button variant="outline" asChild>
             <Link href={edit(invoice.id)} aria-label="Ubah invoice">
@@ -41,7 +43,7 @@ export function InvoiceShowActions({
         </>
       )}
 
-      {!isDraft && !isVoid && balance > 0 && (
+      {can['manage-finance'] && !isDraft && !isVoid && balance > 0 && (
         <>
           <Button variant="outline" aria-label="Catat pembayaran" onClick={onPay}>
             <Plus className="size-4" />
@@ -75,7 +77,7 @@ export function InvoiceShowActions({
         </a>
       </Button>
 
-      {!isVoid && !isDraft && (
+      {can['manage-finance'] && !isVoid && !isDraft && (
         <Button
           variant="ghost"
           size="icon"
@@ -98,26 +100,28 @@ export function InvoiceShowActions({
         </Button>
       )}
 
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Hapus invoice"
-        onClick={async () => {
-          const confirmed = await confirm({
-            title: `Hapus invoice ${invoice.number}?`,
-            description:
-              'Pembayaran yang tercatat ikut terhapus, dan nomor invoice-nya tidak dipakai ulang.',
-            confirmLabel: 'Hapus invoice',
-            destructive: true,
-          });
+      {can['manage-records'] && (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Hapus invoice"
+          onClick={async () => {
+            const confirmed = await confirm({
+              title: `Hapus invoice ${invoice.number}?`,
+              description:
+                'Pembayaran yang tercatat ikut terhapus, dan nomor invoice-nya tidak dipakai ulang.',
+              confirmLabel: 'Hapus invoice',
+              destructive: true,
+            });
 
-          if (confirmed) {
-            onDelete();
-          }
-        }}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+            if (confirmed) {
+              onDelete();
+            }
+          }}
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      )}
     </>
   );
 }

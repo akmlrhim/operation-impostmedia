@@ -15,7 +15,7 @@ class CreateUserCommand extends Command
     protected $signature = 'user:create
                             {email? : Alamat email akun Google-nya}
                             {--name= : Nama tampilan}
-                            {--role= : superuser, administrator, manager, atau member}';
+                            {--role= : superuser, manager, atau member}';
 
     protected $description = 'Daftarkan user baru supaya bisa masuk lewat akun Google';
 

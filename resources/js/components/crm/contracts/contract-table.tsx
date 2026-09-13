@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { show as showClient } from '@/routes/clients';
 import {
   destroy,
@@ -45,6 +46,7 @@ export function ContractTable({
 }) {
   const [confirm, confirmDialog] = useConfirm();
   const selection = useRowSelection(groups.flatMap((group) => group.contracts));
+  const can = useCan();
 
   function toggleGroup(contracts: Contract[]) {
     const allSelected = contracts.every((contract) => selection.selected.has(contract.id));
@@ -58,21 +60,23 @@ export function ContractTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <BulkActionsBar
-        count={selection.count}
-        noun="MoU"
-        exportHref={exportContracts({ query: { ids: Array.from(selection.selected) } }).url}
-        deleteTitle={`Hapus ${selection.count} MoU?`}
-        deleteDescription="Ruang lingkup dan lampirannya ikut terhapus. Invoice yang sudah terbit tetap tersimpan."
-        onDelete={() => {
-          router.delete(destroyBulk().url, {
-            data: { ids: Array.from(selection.selected) },
-            preserveScroll: true,
-            onSuccess: selection.clear,
-          });
-        }}
-        onClear={selection.clear}
-      />
+      {can['manage-records'] && (
+        <BulkActionsBar
+          count={selection.count}
+          noun="MoU"
+          exportHref={exportContracts({ query: { ids: Array.from(selection.selected) } }).url}
+          deleteTitle={`Hapus ${selection.count} MoU?`}
+          deleteDescription="Ruang lingkup dan lampirannya ikut terhapus. Invoice yang sudah terbit tetap tersimpan."
+          onDelete={() => {
+            router.delete(destroyBulk().url, {
+              data: { ids: Array.from(selection.selected) },
+              preserveScroll: true,
+              onSuccess: selection.clear,
+            });
+          }}
+          onClear={selection.clear}
+        />
+      )}
 
       {groups.length === 0 && (
         <Card className="py-8 text-center text-sm text-muted-foreground">
@@ -180,43 +184,51 @@ export function ContractTable({
                             icon: Pencil,
                             href: edit(contract.id),
                           },
-                          {
-                            label: 'Tandatangani',
-                            icon: PenLine,
-                            disabledReason: SIGNABLE.includes(contract.status)
-                              ? undefined
-                              : 'Sudah lewat tahap tanda tangan.',
-                            onSelect: async () => {
-                              const confirmed = await confirm({
-                                title: `Tandai ${contract.number} sudah ditandatangani?`,
-                                description:
-                                  'Status MoU berubah jadi Ditandatangani dan siap ditagihkan.',
-                                confirmLabel: 'Tandatangani',
-                              });
+                          ...(can['approve-documents']
+                            ? [
+                                {
+                                  label: 'Tandatangani',
+                                  icon: PenLine,
+                                  disabledReason: SIGNABLE.includes(contract.status)
+                                    ? undefined
+                                    : 'Sudah lewat tahap tanda tangan.',
+                                  onSelect: async () => {
+                                    const confirmed = await confirm({
+                                      title: `Tandai ${contract.number} sudah ditandatangani?`,
+                                      description:
+                                        'Status MoU berubah jadi Ditandatangani dan siap ditagihkan.',
+                                      confirmLabel: 'Tandatangani',
+                                    });
 
-                              if (confirmed) {
-                                router.post(sign(contract.id), {}, { preserveScroll: true });
-                              }
-                            },
-                          },
-                          {
-                            label: 'Hapus MoU',
-                            icon: Trash2,
-                            destructive: true,
-                            onSelect: async () => {
-                              const confirmed = await confirm({
-                                title: `Hapus MoU ${contract.number}?`,
-                                description:
-                                  'Ruang lingkup dan lampirannya ikut terhapus; invoice yang sudah terbit tetap tersimpan.',
-                                confirmLabel: 'Hapus MoU',
-                                destructive: true,
-                              });
+                                    if (confirmed) {
+                                      router.post(sign(contract.id), {}, { preserveScroll: true });
+                                    }
+                                  },
+                                },
+                              ]
+                            : []),
+                          ...(can['manage-records']
+                            ? [
+                                {
+                                  label: 'Hapus MoU',
+                                  icon: Trash2,
+                                  destructive: true,
+                                  onSelect: async () => {
+                                    const confirmed = await confirm({
+                                      title: `Hapus MoU ${contract.number}?`,
+                                      description:
+                                        'Ruang lingkup dan lampirannya ikut terhapus; invoice yang sudah terbit tetap tersimpan.',
+                                      confirmLabel: 'Hapus MoU',
+                                      destructive: true,
+                                    });
 
-                              if (confirmed) {
-                                router.delete(destroy(contract.id), { preserveScroll: true });
-                              }
-                            },
-                          },
+                                    if (confirmed) {
+                                      router.delete(destroy(contract.id), { preserveScroll: true });
+                                    }
+                                  },
+                                },
+                              ]
+                            : []),
                         ]}
                       />
                     </TableCell>

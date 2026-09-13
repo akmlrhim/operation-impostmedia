@@ -37,24 +37,31 @@ export function navGroupsFor(role: UserRole | undefined): NavGroup[] {
         { title: 'MoU & Kontrak', href: contractsIndex(), icon: FileSignature },
       ],
     },
-    {
-      label: 'Keuangan',
-      items: [
-        { title: 'Ringkasan', href: financeDashboard(), icon: PieChart },
-        { title: 'Invoice', href: invoicesIndex(), icon: Receipt },
-        { title: 'Pemasukan & Pengeluaran', href: financeIndex(), icon: Wallet },
-      ],
-    },
-    {
-      label: 'Master Data',
-      items: [{ title: 'Layanan', href: servicesIndex(), icon: Package }],
-    },
   ];
+
+  const finance: NavGroup = {
+    label: 'Keuangan',
+    items: [{ title: 'Invoice', href: invoicesIndex(), icon: Receipt }],
+  };
+
+  const masterData: NavGroup = {
+    label: 'Master Data',
+    items: [{ title: 'Layanan', href: servicesIndex(), icon: Package }],
+  };
 
   const settings: NavGroup = {
     label: 'Pengaturan',
-    items: [{ title: 'Perusahaan', href: companyEdit(), icon: Settings2 }],
+    items: [],
   };
+
+  if (role !== 'member') {
+    finance.items.push({ title: 'Ringkasan', href: financeDashboard(), icon: PieChart });
+    finance.items.push({ title: 'Pemasukan & Pengeluaran', href: financeIndex(), icon: Wallet });
+    groups.push(finance, masterData);
+    settings.items.push({ title: 'Perusahaan', href: companyEdit(), icon: Settings2 });
+  } else {
+    groups.push(finance);
+  }
 
   if (role === 'superuser') {
     settings.items.push({ title: 'Pengguna', href: usersIndex(), icon: Users });

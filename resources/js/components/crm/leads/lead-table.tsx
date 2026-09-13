@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, relativeDueLabel, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { convert, destroy, destroyBulk, exportMethod as exportLeads, show } from '@/routes/leads';
 import type { LeadCard, LeadStageTable, Option } from '@/types/crm';
 
@@ -49,24 +50,27 @@ export function LeadTable({
 }) {
   const [confirm, confirmDialog] = useConfirm();
   const selection = useRowSelection(leads);
+  const can = useCan();
 
   return (
     <div className="flex flex-col gap-3">
-      <BulkActionsBar
-        count={selection.count}
-        noun="lead"
-        exportHref={exportLeads({ query: { ids: Array.from(selection.selected) } }).url}
-        deleteTitle={`Hapus ${selection.count} lead?`}
-        deleteDescription="Riwayat aktivitas lead yang dihapus ikut hilang."
-        onDelete={() => {
-          router.delete(destroyBulk().url, {
-            data: { ids: Array.from(selection.selected) },
-            preserveScroll: true,
-            onSuccess: selection.clear,
-          });
-        }}
-        onClear={selection.clear}
-      />
+      {can['manage-records'] && (
+        <BulkActionsBar
+          count={selection.count}
+          noun="lead"
+          exportHref={exportLeads({ query: { ids: Array.from(selection.selected) } }).url}
+          deleteTitle={`Hapus ${selection.count} lead?`}
+          deleteDescription="Riwayat aktivitas lead yang dihapus ikut hilang."
+          onDelete={() => {
+            router.delete(destroyBulk().url, {
+              data: { ids: Array.from(selection.selected) },
+              preserveScroll: true,
+              onSuccess: selection.clear,
+            });
+          }}
+          onClear={selection.clear}
+        />
+      )}
 
       <Card className="overflow-hidden py-0">
         <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-4 py-3">
@@ -211,7 +215,7 @@ export function LeadTable({
                         onSelect: () => router.visit(show(lead.id)),
                       },
                       { label: 'Ubah lead', icon: Pencil, onSelect: () => onEdit(lead) },
-                      ...(lead.converted_client_id === null
+                      ...(can['manage-records'] && lead.converted_client_id === null
                         ? [
                             {
                               label: 'Jadikan klien',
@@ -220,23 +224,27 @@ export function LeadTable({
                             },
                           ]
                         : []),
-                      {
-                        label: 'Hapus lead',
-                        icon: Trash2,
-                        destructive: true,
-                        onSelect: async () => {
-                          const confirmed = await confirm({
-                            title: `Hapus lead ${lead.company_name}?`,
-                            description: 'Riwayat aktivitas lead ini ikut terhapus.',
-                            confirmLabel: 'Hapus lead',
-                            destructive: true,
-                          });
+                      ...(can['manage-records']
+                        ? [
+                            {
+                              label: 'Hapus lead',
+                              icon: Trash2,
+                              destructive: true,
+                              onSelect: async () => {
+                                const confirmed = await confirm({
+                                  title: `Hapus lead ${lead.company_name}?`,
+                                  description: 'Riwayat aktivitas lead ini ikut terhapus.',
+                                  confirmLabel: 'Hapus lead',
+                                  destructive: true,
+                                });
 
-                          if (confirmed) {
-                            router.delete(destroy(lead.id), { preserveScroll: true });
-                          }
-                        },
-                      },
+                                if (confirmed) {
+                                  router.delete(destroy(lead.id), { preserveScroll: true });
+                                }
+                              },
+                            },
+                          ]
+                        : []),
                     ]}
                   />
                 </TableCell>

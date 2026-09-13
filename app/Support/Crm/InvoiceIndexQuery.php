@@ -33,8 +33,11 @@ class InvoiceIndexQuery
         $filterClientId = $request->integer('filter_client') ?: null;
         $sort = $request->string('sort')->toString();
         $direction = $request->string('direction')->toString() === 'desc' ? 'desc' : 'asc';
+        $user = $request->user();
 
-        $matching = function (Builder|Relation $query) use ($status): void {
+        $matching = function (Builder|Relation $query) use ($status, $user): void {
+            $query->visibleTo($user);
+
             if ($status === InvoiceStatus::Overdue->value) {
                 $query->whereIn('invoices.status', InvoiceStatus::outstanding())
                     ->where('invoices.due_date', '<', now()->toDateString());
@@ -81,14 +84,14 @@ class InvoiceIndexQuery
             ],
             'filterClients' => Client::query()
                 ->where(fn (Builder $q) => $q
-                    ->whereHas('invoices')
+                    ->whereHas('invoices', fn (Builder $invoices) => $invoices->visibleTo($request->user()))
                     ->when($filterClientId, fn (Builder $q) => $q->orWhere('clients.id', $filterClientId)))
                 ->orderBy('company_name')
                 ->get(['id', 'company_name']),
             'summary' => [
-                'outstanding' => (float) Invoice::query()->outstanding()->sum('balance_due'),
-                'overdue' => (float) Invoice::query()->overdue()->sum('balance_due'),
-                'draft' => Invoice::query()->where('status', InvoiceStatus::Draft)->count(),
+                'outstanding' => (float) Invoice::query()->visibleTo($user)->outstanding()->sum('balance_due'),
+                'overdue' => (float) Invoice::query()->visibleTo($user)->overdue()->sum('balance_due'),
+                'draft' => Invoice::query()->visibleTo($user)->where('status', InvoiceStatus::Draft)->count(),
             ],
         ];
     }

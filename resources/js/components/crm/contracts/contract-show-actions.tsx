@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCan } from '@/lib/use-can';
 import { document as documentRoute, edit, finalize, pdf } from '@/routes/contracts';
 import type { Contract } from '@/types/crm';
 
@@ -33,6 +34,8 @@ export function ContractShowActions({
   onSign: () => void;
   onDelete: () => void;
 }) {
+  const can = useCan();
+
   return (
     <>
       <Button variant="outline" asChild>
@@ -49,7 +52,7 @@ export function ContractShowActions({
         </Link>
       </Button>
 
-      {SIGNABLE.includes(contract.status) && (
+      {can['approve-documents'] && SIGNABLE.includes(contract.status) && (
         <Button aria-label="Tandatangani MoU" onClick={onSign}>
           <PenLine className="size-4" />
           <span className="hidden sm:inline">Tandatangani</span>
@@ -64,12 +67,14 @@ export function ContractShowActions({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={() => router.post(finalize(contract.id), {}, { preserveScroll: true })}
-          >
-            <FileText className="size-4" />
-            Generate dokumen
-          </DropdownMenuItem>
+          {can['approve-documents'] && (
+            <DropdownMenuItem
+              onSelect={() => router.post(finalize(contract.id), {}, { preserveScroll: true })}
+            >
+              <FileText className="size-4" />
+              Generate dokumen
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuItem asChild>
             <a href={pdf(contract.id).url}>
@@ -78,26 +83,30 @@ export function ContractShowActions({
             </a>
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
+          {can['manage-records'] && (
+            <>
+              <DropdownMenuSeparator />
 
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={async () => {
-              const confirmed = await confirm({
-                title: `Hapus ${contract.number}?`,
-                description: 'Nomor MoU yang sudah terpakai tidak dipakai ulang.',
-                confirmLabel: 'Hapus MoU',
-                destructive: true,
-              });
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={async () => {
+                  const confirmed = await confirm({
+                    title: `Hapus ${contract.number}?`,
+                    description: 'Nomor MoU yang sudah terpakai tidak dipakai ulang.',
+                    confirmLabel: 'Hapus MoU',
+                    destructive: true,
+                  });
 
-              if (confirmed) {
-                onDelete();
-              }
-            }}
-          >
-            <Trash2 className="size-4" />
-            Hapus MoU
-          </DropdownMenuItem>
+                  if (confirmed) {
+                    onDelete();
+                  }
+                }}
+              >
+                <Trash2 className="size-4" />
+                Hapus MoU
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

@@ -50,9 +50,11 @@ class ContractIndexQuery
         $filterClientId = $request->integer('filter_client') ?: null;
         $sort = $request->string('sort')->toString();
         $direction = $request->string('direction')->toString() === 'desc' ? 'desc' : 'asc';
+        $user = $request->user();
 
-        $matching = function (Builder|Relation $query) use ($status): void {
+        $matching = function (Builder|Relation $query) use ($status, $user): void {
             $query->when($status !== '', fn ($q) => $q->where('contracts.status', $status));
+            $query->visibleTo($user);
         };
 
         $groups = Client::query()
@@ -90,7 +92,7 @@ class ContractIndexQuery
             ],
             'filterClients' => Client::query()
                 ->where(fn (Builder $q) => $q
-                    ->whereHas('contracts')
+                    ->whereHas('contracts', fn (Builder $contracts) => $contracts->visibleTo($request->user()))
                     ->when($filterClientId, fn (Builder $q) => $q->orWhere('clients.id', $filterClientId)))
                 ->orderBy('company_name')
                 ->get(['id', 'company_name']),

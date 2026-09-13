@@ -21,12 +21,12 @@ class DashboardController extends Controller
             'month' => $monthStart->format('Y-m'),
             'months' => DashboardStats::months(),
             'period' => DashboardStats::monthLabel($monthStart),
-            'stats' => DashboardStats::stats($monthStart),
-            'trend' => DashboardStats::trend($monthStart),
-            'temperature' => DashboardStats::temperature(),
-            'aging' => DashboardAttention::aging(),
-            'attention' => DashboardAttention::attention(),
-            'activities' => DashboardAttention::activities($monthStart),
+            'stats' => DashboardStats::stats($monthStart, $request->user()),
+            'trend' => DashboardStats::trend($monthStart, $request->user()),
+            'temperature' => DashboardStats::temperature($request->user()),
+            'aging' => DashboardAttention::aging($request->user()),
+            'attention' => DashboardAttention::attention($request->user()),
+            'activities' => DashboardAttention::activities($monthStart, $request->user()),
         ]);
     }
 }

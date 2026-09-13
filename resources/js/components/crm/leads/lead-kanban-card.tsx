@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { daysFromToday, rupiah, rupiahCompact, shortDate } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { cn } from '@/lib/utils';
 import { show } from '@/routes/leads';
 import type { LeadCard, Option } from '@/types/crm';
@@ -57,6 +58,7 @@ export function LeadKanbanCard({
   onDelete: () => void;
 }) {
   const dueInDays = daysFromToday(lead.next_action_date);
+  const can = useCan();
 
   return (
     <article className="group rounded-xl border bg-card p-3 shadow-xs transition-shadow duration-150 hover:shadow-md motion-reduce:transition-none">
@@ -88,17 +90,19 @@ export function LeadKanbanCard({
                 Ubah lead
               </DropdownMenuItem>
 
-              {lead.converted_client_id === null && (
+              {can['manage-records'] && lead.converted_client_id === null && (
                 <DropdownMenuItem onSelect={onConvert}>
                   <ArrowRightLeft className="size-3.5" />
                   Jadikan klien
                 </DropdownMenuItem>
               )}
 
-              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-                <Trash2 className="size-3.5" />
-                Hapus lead
-              </DropdownMenuItem>
+              {can['manage-records'] && (
+                <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                  <Trash2 className="size-3.5" />
+                  Hapus lead
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -74,6 +74,8 @@ class ContractController extends Controller
 
     public function show(Contract $contract): Response
     {
+        $this->ensureVisible($contract);
+
         $contract->load([
             'client', 'items.servicePackage:id,name', 'invoices', 'lead:id,company_name',
             'attachments.uploader:id,name', 'assignees:id,name',
@@ -116,6 +118,8 @@ class ContractController extends Controller
 
     public function edit(Contract $contract): Response
     {
+        $this->ensureVisible($contract);
+
         return Inertia::render('contracts/edit', [
             ...ContractFormOptions::build(),
             'statuses' => EnumOptions::from(ContractStatus::class),
@@ -157,6 +161,8 @@ class ContractController extends Controller
 
     public function document(Contract $contract, RenderContractDocument $renderer): Response
     {
+        $this->ensureVisible($contract);
+
         return Inertia::render('contracts/document', [
             'contract' => $contract->only(['id', 'number', 'title']),
             'page' => $renderer->editorPage($contract, $renderer->editable($contract)),
@@ -170,6 +176,8 @@ class ContractController extends Controller
         RenderContractDocument $renderer,
         ArchiveDocumentPdf $archiver,
     ): RedirectResponse {
+        $this->ensureVisible($contract);
+
         $contract->saveEditedBody(HtmlSanitizer::clean($request->validated()['body']));
 
         if ($contract->file_path !== null) {
@@ -183,6 +191,8 @@ class ContractController extends Controller
 
     public function resetDocument(Contract $contract): RedirectResponse
     {
+        $this->ensureVisible($contract);
+
         $contract->forgetDocument();
 
         Inertia::flash('toast', [
@@ -195,6 +205,8 @@ class ContractController extends Controller
 
     public function clauses(Contract $contract, WriteContractClauses $writer): RedirectResponse
     {
+        $this->ensureVisible($contract);
+
         try {
             $writer->handle($contract->load(['items.servicePackage', 'client']));
         } catch (AiUnavailable $e) {
@@ -251,6 +263,8 @@ class ContractController extends Controller
 
     public function update(ContractRequest $request, Contract $contract): RedirectResponse
     {
+        $this->ensureVisible($contract);
+
         $data = $request->validated();
         $items = $data['items'];
         unset($data['items']);
@@ -287,6 +301,8 @@ class ContractController extends Controller
             return back();
         }
 
+        $this->ensureVisible($contract);
+
         $data = $request->validated();
         $file = $request->file('signature');
 
@@ -316,6 +332,8 @@ class ContractController extends Controller
 
     public function signature(Contract $contract): StreamedResponse
     {
+        $this->ensureVisible($contract);
+
         $disk = Storage::disk(Contract::SIGNATURE_DISK);
 
         abort_if($contract->signature_path === null || ! $disk->exists($contract->signature_path), 404);
@@ -331,6 +349,8 @@ class ContractController extends Controller
         ArchiveDocumentPdf $archiver,
         WriteContractClauses $writer,
     ): RedirectResponse {
+        $this->ensureVisible($contract);
+
         $warning = $this->writePendingClauses($contract, $writer);
 
         $renderer->handle($contract);
@@ -366,6 +386,8 @@ class ContractController extends Controller
         RenderContractDocument $renderer,
         ArchiveDocumentPdf $archiver,
     ): StreamedResponse {
+        $this->ensureVisible($contract);
+
         $path = $contract->file_path;
 
         if ($path === null || ! Storage::disk(ArchiveDocumentPdf::DISK)->exists($path)) {
@@ -380,6 +402,8 @@ class ContractController extends Controller
 
     public function invoice(Contract $contract, CreateInvoiceFromContract $creator): RedirectResponse
     {
+        $this->ensureVisible($contract);
+
         $blocker = $contract->invoiceBlocker();
 
         if ($blocker !== null) {
@@ -397,6 +421,8 @@ class ContractController extends Controller
 
     public function destroy(Contract $contract): RedirectResponse
     {
+        $this->ensureVisible($contract);
+
         $contract->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'MoU dihapus.']);

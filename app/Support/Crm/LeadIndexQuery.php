@@ -6,6 +6,8 @@ use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadStage;
 use App\Models\ServicePackage;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class LeadIndexQuery
@@ -40,14 +42,17 @@ class LeadIndexQuery
     /**
      * @return list<array<string, mixed>>
      */
-    public static function kanban(): array
+    public static function kanban(?User $user = null): array
     {
+        $user ??= request()->user();
+
         return array_values(LeadStage::query()
             ->orderBy('position')
-            ->withCount('leads')
-            ->withSum('leads', 'estimated_value')
+            ->withCount(['leads' => fn (Builder $query) => $query->visibleTo($user)])
+            ->withSum(['leads as leads_sum_estimated_value' => fn (Builder $query) => $query->visibleTo($user)], 'estimated_value')
             ->with(['leads' => fn ($q) => $q
                 ->with(self::RELATIONS)
+                ->visibleTo($user)
                 ->orderBy('position')
                 ->limit(self::KANBAN_PER_COLUMN),
             ])
@@ -71,6 +76,7 @@ class LeadIndexQuery
             : ['leads.position', 'asc'];
 
         $rows = Lead::query()
+            ->visibleTo($request->user())
             ->when($filterStageId, fn ($q) => $q->where('lead_stage_id', $filterStageId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->with(self::RELATIONS)

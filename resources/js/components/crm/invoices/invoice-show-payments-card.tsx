@@ -4,6 +4,7 @@ import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { destroy as destroyPayment } from '@/routes/payments';
 import type { Invoice, Option } from '@/types/crm';
 
@@ -16,6 +17,8 @@ export function InvoiceShowPaymentsCard({
   methods: Option[];
   confirm: ConfirmFn;
 }) {
+  const can = useCan();
+
   return (
     <Card>
       <CardHeader>
@@ -38,25 +41,27 @@ export function InvoiceShowPaymentsCard({
                 {methods.find((m) => m.value === item.method)?.label ?? item.method}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Hapus pembayaran"
-              onClick={async () => {
-                const confirmed = await confirm({
-                  title: 'Hapus catatan pembayaran ini?',
-                  description: 'Sisa tagihan invoice dihitung ulang setelah dihapus.',
-                  confirmLabel: 'Hapus pembayaran',
-                  destructive: true,
-                });
+            {can['manage-finance'] && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Hapus pembayaran"
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: 'Hapus catatan pembayaran ini?',
+                    description: 'Sisa tagihan invoice dihitung ulang setelah dihapus.',
+                    confirmLabel: 'Hapus pembayaran',
+                    destructive: true,
+                  });
 
-                if (confirmed) {
-                  router.delete(destroyPayment(item.id), { preserveScroll: true });
-                }
-              }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+                  if (confirmed) {
+                    router.delete(destroyPayment(item.id), { preserveScroll: true });
+                  }
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         ))}
       </CardContent>

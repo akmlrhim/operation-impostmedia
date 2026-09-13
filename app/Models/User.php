@@ -61,6 +61,11 @@ class User extends Authenticatable
         return $this->role === UserRole::Superuser;
     }
 
+    public function isManagerOrAbove(): bool
+    {
+        return $this->role === UserRole::Superuser || $this->role === UserRole::Manager;
+    }
+
     public function isApproved(): bool
     {
         return $this->approved_at !== null;

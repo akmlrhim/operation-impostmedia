@@ -30,9 +30,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
     () =>
       types.map((type) => ({
         ...type,
-        services: services
-          .filter((service) => service.type === type.value)
-          .sort((a, b) => a.name.localeCompare(b.name)),
+        services: services.filter((service) => service.type === type.value),
       })),
     [services, types],
   );

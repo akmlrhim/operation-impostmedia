@@ -17,7 +17,7 @@ class UserManagementTest extends TestCase
     {
         $this->actingAs($this->superuser())->get(route('users.index'))->assertOk();
 
-        foreach ([UserRole::Administrator, UserRole::Manager, UserRole::Member] as $role) {
+        foreach ([UserRole::Manager, UserRole::Member] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))
                 ->get(route('users.index'))
                 ->assertForbidden();
@@ -124,17 +124,30 @@ class UserManagementTest extends TestCase
         $this->actingAs($superuser)->delete(route('users.destroy', $other));
         $this->assertDatabaseMissing('users', ['id' => $other->id]);
 
-        $administrator = User::factory()->create(['role' => UserRole::Administrator]);
+        $manager = User::factory()->create(['role' => UserRole::Manager]);
 
-        $this->actingAs($administrator)->delete(route('users.destroy', $superuser))->assertForbidden();
+        $this->actingAs($manager)->delete(route('users.destroy', $superuser))->assertForbidden();
         $this->assertDatabaseHas('users', ['id' => $superuser->id]);
+    }
+
+    public function test_only_a_superuser_may_approve_a_registrant(): void
+    {
+        $pending = User::factory()->pending()->create();
+
+        foreach ([UserRole::Manager, UserRole::Member] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]))
+                ->post(route('users.approve', $pending), ['role' => 'manager', 'is_active' => true])
+                ->assertForbidden();
+        }
+
+        $this->assertNull($pending->fresh()->approved_at);
     }
 
     public function test_only_a_superuser_may_edit_or_delete_a_user(): void
     {
         $target = User::factory()->create(['role' => UserRole::Member]);
 
-        foreach ([UserRole::Administrator, UserRole::Manager, UserRole::Member] as $role) {
+        foreach ([UserRole::Manager, UserRole::Member] as $role) {
             $actor = User::factory()->create(['role' => $role]);
 
             $this->actingAs($actor)

@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/crm/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRealtime } from '@/hooks/use-realtime';
+import { useCan } from '@/lib/use-can';
 import { destroy, index, show } from '@/routes/clients';
 import { create as createContract } from '@/routes/contracts';
 import { create as createInvoice } from '@/routes/invoices';
@@ -35,6 +36,7 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
 
   const [confirm, confirmDialog] = useConfirm();
   const [editModal, setEditModal] = useState(false);
+  const can = useCan();
 
   return (
     <>
@@ -63,25 +65,27 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
                 Buat invoice
               </Link>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Hapus klien"
-              onClick={async () => {
-                const confirmed = await confirm({
-                  title: `Hapus klien ${client.company_name}?`,
-                  description: 'MoU dan riwayat aktivitas klien ini ikut hilang dari daftar.',
-                  confirmLabel: 'Hapus klien',
-                  destructive: true,
-                });
+            {can['manage-records'] && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Hapus klien"
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: `Hapus klien ${client.company_name}?`,
+                    description: 'MoU dan riwayat aktivitas klien ini ikut hilang dari daftar.',
+                    confirmLabel: 'Hapus klien',
+                    destructive: true,
+                  });
 
-                if (confirmed) {
-                  router.delete(destroy(client.id));
-                }
-              }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+                  if (confirmed) {
+                    router.delete(destroy(client.id));
+                  }
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </>
         }
       />

@@ -49,7 +49,16 @@ class CompanyProfileTest extends TestCase
     {
         $html = $this->renderMou();
 
-        foreach (CompanyProfile::identity() as $value) {
+        $rendered = [
+            CompanyProfile::name(),
+            CompanyProfile::address(),
+            CompanyProfile::phone(),
+            CompanyProfile::email(),
+            CompanyProfile::signatoryName(),
+            CompanyProfile::signatoryPosition(),
+        ];
+
+        foreach ($rendered as $value) {
             $this->assertStringContainsString($value, $html, "hilang: {$value}");
         }
 

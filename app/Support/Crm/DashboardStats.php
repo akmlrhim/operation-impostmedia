@@ -8,7 +8,9 @@ use App\Models\Activity;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Payment;
+use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
@@ -72,18 +74,20 @@ class DashboardStats
     /**
      * @return array<string, float|int|null>
      */
-    public static function stats(CarbonInterface $monthStart): array
+    public static function stats(CarbonInterface $monthStart, ?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $lastMonth = $monthStart->copy()->subMonth();
 
-        $collected = self::sumPayments($monthStart, $monthStart->copy()->endOfMonth());
-        $collectedPrev = self::sumPayments($lastMonth, $lastMonth->copy()->endOfMonth());
+        $collected = self::sumPayments($monthStart, $monthStart->copy()->endOfMonth(), $user);
+        $collectedPrev = self::sumPayments($lastMonth, $lastMonth->copy()->endOfMonth(), $user);
 
-        $issued = self::sumIssued($monthStart, $monthStart->copy()->endOfMonth());
-        $issuedPrev = self::sumIssued($lastMonth, $lastMonth->copy()->endOfMonth());
+        $issued = self::sumIssued($monthStart, $monthStart->copy()->endOfMonth(), $user);
+        $issuedPrev = self::sumIssued($lastMonth, $lastMonth->copy()->endOfMonth(), $user);
 
-        $outstanding = (float) Invoice::query()->outstanding()->sum('balance_due');
-        $overdue = (float) Invoice::query()->overdue()->sum('balance_due');
+        $outstanding = (float) Invoice::query()->visibleTo($user)->outstanding()->sum('balance_due');
+        $overdue = (float) Invoice::query()->visibleTo($user)->overdue()->sum('balance_due');
 
         return [
             'collected' => $collected,
@@ -92,18 +96,21 @@ class DashboardStats
             'issuedChange' => self::percentChange($issued, $issuedPrev),
             'outstanding' => $outstanding,
             'overdue' => $overdue,
-            'overdueCount' => Invoice::query()->overdue()->count(),
-            'pipeline' => (float) Lead::query()->open()->sum('estimated_value'),
-            'openLeads' => Lead::query()->open()->count(),
+            'overdueCount' => Invoice::query()->visibleTo($user)->overdue()->count(),
+            'pipeline' => (float) Lead::query()->visibleTo($user)->open()->sum('estimated_value'),
+            'openLeads' => Lead::query()->visibleTo($user)->open()->count(),
         ];
     }
 
     /**
      * @return list<array{value: string, label: string, description: string, count: int, total: float}>
      */
-    public static function temperature(): array
+    public static function temperature(?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $open = Lead::query()
+            ->visibleTo($user)
             ->open()
             ->selectRaw('temperature, count(*) as leads_count, sum(estimated_value) as leads_total')
             ->groupBy('temperature')
@@ -130,11 +137,14 @@ class DashboardStats
     /**
      * @return list<array{key: string, label: string, year: string, issued: float, collected: float}>
      */
-    public static function trend(CarbonInterface $monthStart): array
+    public static function trend(CarbonInterface $monthStart, ?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $from = $monthStart->copy()->subMonths(self::TREND_MONTHS - 1);
 
         $issued = Invoice::query()
+            ->visibleTo($user)
             ->whereNotIn('status', [InvoiceStatus::Draft, InvoiceStatus::Void])
             ->where('issue_date', '>=', $from->toDateString())
             ->get(['issue_date', 'total'])
@@ -143,6 +153,7 @@ class DashboardStats
 
         $collected = Payment::query()
             ->where('paid_at', '>=', $from->toDateString())
+            ->whereHas('invoice', fn (Builder $query) => $query->visibleTo($user))
             ->get(['paid_at', 'amount'])
             ->groupBy(fn (Payment $payment): string => $payment->paid_at->format('Y-m'))
             ->map(fn (Collection $rows): float => (float) $rows->sum('amount'));
@@ -165,14 +176,18 @@ class DashboardStats
         return $months;
     }
 
-    private static function sumPayments(CarbonInterface $from, CarbonInterface $to): float
+    private static function sumPayments(CarbonInterface $from, CarbonInterface $to, User $user): float
     {
-        return (float) Payment::query()->whereBetween('paid_at', [$from, $to])->sum('amount');
+        return (float) Payment::query()
+            ->whereBetween('paid_at', [$from, $to])
+            ->whereHas('invoice', fn (Builder $query) => $query->visibleTo($user))
+            ->sum('amount');
     }
 
-    private static function sumIssued(CarbonInterface $from, CarbonInterface $to): float
+    private static function sumIssued(CarbonInterface $from, CarbonInterface $to, User $user): float
     {
         return (float) Invoice::query()
+            ->visibleTo($user)
             ->whereNotIn('status', [InvoiceStatus::Draft, InvoiceStatus::Void])
             ->whereBetween('issue_date', [$from, $to])
             ->sum('total');

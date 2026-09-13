@@ -12,7 +12,7 @@ class ApproveUserCommand extends Command
 {
     protected $signature = 'user:approve
                             {email : Alamat email pendaftar yang disetujui}
-                            {--role= : superuser, administrator, manager, atau member}';
+                            {--role= : superuser, manager, atau member}';
 
     protected $description = 'Setujui pendaftar Google dan tetapkan perannya';
 

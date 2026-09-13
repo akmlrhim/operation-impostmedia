@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureUserIsApproved;
+use App\Http\Middleware\EnsureUserIsManager;
 use App\Http\Middleware\EnsureUserIsSuperuser;
 use App\Http\Middleware\EnsureVisitorIsHuman;
 use App\Http\Middleware\HandleAppearance;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'approved' => EnsureUserIsApproved::class,
+            'manager' => EnsureUserIsManager::class,
             'superuser' => EnsureUserIsSuperuser::class,
             'turnstile' => EnsureVisitorIsHuman::class,
         ]);

@@ -90,8 +90,8 @@ class Service extends Model
                 ->select(['id', 'service_id', 'name', 'price', 'unit', 'billing_type', 'position'])
                 ->with('points:id,service_package_id,label'),
             ])
-            ->orderBy('type')
-            ->orderBy('name')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get(['id', 'type', 'name']);
     }
 }

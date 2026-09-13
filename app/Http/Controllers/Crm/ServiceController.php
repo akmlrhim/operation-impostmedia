@@ -21,8 +21,8 @@ class ServiceController extends Controller
         return Inertia::render('services/index', [
             'services' => Service::query()
                 ->with('packages.points')
-                ->orderBy('type')
-                ->orderBy('name')
+                ->orderBy('created_at')
+                ->orderBy('id')
                 ->get(),
             'types' => EnumOptions::from(ServiceType::class),
             'billingTypes' => EnumOptions::from(ServiceBillingType::class),

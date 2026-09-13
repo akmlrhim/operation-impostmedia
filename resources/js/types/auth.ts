@@ -1,4 +1,12 @@
-export type UserRole = 'superuser' | 'administrator' | 'manager' | 'member';
+export type UserRole = 'superuser' | 'manager' | 'member';
+
+export type UserCan = {
+  'manage-users': boolean;
+  'manage-master-data': boolean;
+  'manage-finance': boolean;
+  'approve-documents': boolean;
+  'manage-records': boolean;
+};
 
 export type User = {
   id: number;

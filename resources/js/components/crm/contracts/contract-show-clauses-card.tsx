@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { FilePenLine, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCan } from '@/lib/use-can';
 import { clauses as writeClauses, document as documentRoute } from '@/routes/contracts';
 import type { ContractClause } from '@/types/crm';
 
@@ -18,6 +19,7 @@ export function ContractShowClausesCard({
 }) {
   const rewrite = useForm({});
   const written = clauses.some((clause) => clause.points.length > 0);
+  const can = useCan();
 
   return (
     <Card>
@@ -34,7 +36,7 @@ export function ContractShowClausesCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {aiEnabled && (
+          {can['approve-documents'] && aiEnabled && (
             <Button
               type="button"
               variant="outline"

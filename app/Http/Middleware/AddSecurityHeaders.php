@@ -100,8 +100,8 @@ class AddSecurityHeaders
      * Browser membandingkan CSP dengan URL yang benar-benar di-fetch, jadi
      * host-nya harus sama persis. `127.0.0.1` dipakai apa adanya (IPv4 literal
      * sah sebagai host-source), sedangkan `::1` ditulis `localhost` karena
-     * tata bahasa host-source tidak mengenal alamat IPv6 literal — kalau lewat
-     * begitu saja, browser membuang seluruh direktifnya dan aset dev diblokir.
+     * tata bahasa host-source tidak mengenal alamat IPv6 literal (kalau lewat
+     * begitu saja, browser membuang seluruh direktifnya dan aset dev diblokir).
      */
     private function devServer(): ?string
     {

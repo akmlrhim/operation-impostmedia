@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\Lead;
+use App\Models\Payment;
 use App\Support\DownloadName;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,7 @@ class AttachmentController extends Controller
     public function store(AttachmentRequest $request, string $type, int $id): RedirectResponse
     {
         $owner = $this->owner($type, $id);
+        $this->ensureVisible($owner);
         $file = $request->file('file');
 
         $owner->attachments()->create([
@@ -50,6 +52,8 @@ class AttachmentController extends Controller
 
     public function download(Attachment $attachment): StreamedResponse
     {
+        $this->ensureOwnerAccessible($attachment);
+
         return Storage::disk($attachment->disk)->download(
             $attachment->path,
             DownloadName::safe($attachment->name, 'lampiran'),
@@ -58,6 +62,8 @@ class AttachmentController extends Controller
 
     public function destroy(Attachment $attachment): RedirectResponse
     {
+        $this->ensureOwnerAccessible($attachment);
+
         if (Storage::disk($attachment->disk)->exists($attachment->path)) {
             Storage::disk($attachment->disk)->delete($attachment->path);
         }
@@ -74,5 +80,22 @@ class AttachmentController extends Controller
         abort_unless(array_key_exists($type, self::OWNERS), 404);
 
         return self::OWNERS[$type]::query()->findOrFail($id);
+    }
+
+    private function ensureOwnerAccessible(Attachment $attachment): void
+    {
+        $owner = $attachment->attachable;
+
+        abort_if($owner === null, 404);
+
+        if ($owner instanceof Payment) {
+            $this->ensureVisible($owner->invoice);
+
+            return;
+        }
+
+        if ($owner instanceof Lead || $owner instanceof Client || $owner instanceof Contract || $owner instanceof Invoice) {
+            $this->ensureVisible($owner);
+        }
     }
 }

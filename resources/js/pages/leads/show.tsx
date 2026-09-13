@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRealtime } from '@/hooks/use-realtime';
 import { formatDate, relativeDueLabel, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { show as showClient } from '@/routes/clients';
 import { destroy, convert, index, show } from '@/routes/leads';
 import type { LeadActivity, LeadDetail, Option, ServiceOption, UserOption } from '@/types/crm';
@@ -45,6 +46,7 @@ export default function LeadShow({
 
   const [confirm, confirmDialog] = useConfirm();
   const [editModal, setEditModal] = useState(false);
+  const can = useCan();
 
   const masterPrice = lead.services.length
     ? lead.services.reduce((sum, item) => sum + item.price, 0)
@@ -66,32 +68,34 @@ export default function LeadShow({
               Ubah
             </Button>
 
-            {lead.converted_client_id === null && (
+            {can['manage-records'] && lead.converted_client_id === null && (
               <Button variant="outline" onClick={() => router.post(convert(lead.id))}>
                 <ArrowRightLeft className="size-4" />
                 Jadikan klien
               </Button>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Hapus lead"
-              onClick={async () => {
-                const confirmed = await confirm({
-                  title: `Hapus lead ${lead.company_name}?`,
-                  description: 'Lead ini hilang dari daftar beserta catatan dan lampirannya.',
-                  confirmLabel: 'Hapus lead',
-                  destructive: true,
-                });
+            {can['manage-records'] && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Hapus lead"
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: `Hapus lead ${lead.company_name}?`,
+                    description: 'Lead ini hilang dari daftar beserta catatan dan lampirannya.',
+                    confirmLabel: 'Hapus lead',
+                    destructive: true,
+                  });
 
-                if (confirmed) {
-                  router.delete(destroy(lead.id));
-                }
-              }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+                  if (confirmed) {
+                    router.delete(destroy(lead.id));
+                  }
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </>
         }
       />

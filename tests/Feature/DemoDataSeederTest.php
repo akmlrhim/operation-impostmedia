@@ -35,7 +35,7 @@ class DemoDataSeederTest extends TestCase
     {
         $this->seed(DemoDataSeeder::class);
 
-        foreach ([UserRole::Administrator, UserRole::Manager, UserRole::Member] as $role) {
+        foreach ([UserRole::Manager, UserRole::Member] as $role) {
             $this->assertTrue(
                 User::query()->where('role', $role)->whereNotNull('approved_at')->exists(),
                 "tidak ada anggota dengan peran {$role->value}",
@@ -61,6 +61,7 @@ class DemoDataSeederTest extends TestCase
     public function test_the_crm_dashboard_data_is_not_empty(): void
     {
         $this->seed(DemoDataSeeder::class);
+        $this->actingAs(User::query()->where('role', UserRole::Manager)->whereNotNull('approved_at')->firstOrFail());
 
         $this->assertNotSame([], DashboardAttention::attention());
         $this->assertNotSame([], DashboardAttention::aging());

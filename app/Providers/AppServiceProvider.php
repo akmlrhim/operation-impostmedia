@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
@@ -37,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureSecurity();
         $this->configureRateLimits();
         $this->configurePerformance();
+        $this->configureGates();
     }
 
     protected function configureDefaults(): void
@@ -80,5 +83,17 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(app()->runningUnitTests());
 
         Vite::prefetch(concurrency: 3);
+    }
+
+    protected function configureGates(): void
+    {
+        $isSuperuser = fn (User $user): bool => $user->isSuperuser();
+        $isManagerOrAbove = fn (User $user): bool => $user->isManagerOrAbove();
+
+        Gate::define('manage-users', $isSuperuser);
+        Gate::define('manage-master-data', $isManagerOrAbove);
+        Gate::define('manage-finance', $isManagerOrAbove);
+        Gate::define('approve-documents', $isManagerOrAbove);
+        Gate::define('manage-records', $isManagerOrAbove);
     }
 }

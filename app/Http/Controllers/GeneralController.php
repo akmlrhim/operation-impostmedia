@@ -22,7 +22,8 @@ class GeneralController extends Controller
         ));
 
         $types = $requested === [] ? AgendaCalendar::TYPES : $requested;
-        $mine = $request->boolean('mine');
+        $user = $request->user();
+        $mine = $request->boolean('mine') || ! $user->isManagerOrAbove();
         $view = $request->string('view')->toString() === 'list' ? 'list' : 'calendar';
 
         return Inertia::render('general', [
@@ -33,7 +34,7 @@ class GeneralController extends Controller
             'types' => $types,
             'mine' => $mine,
             'view' => $view,
-            'events' => AgendaCalendar::events($month, $types, $mine ? $request->user()?->id : null),
+            'events' => AgendaCalendar::events($month, $types, $mine ? $user->id : null),
         ]);
     }
 }

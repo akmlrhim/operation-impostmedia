@@ -70,6 +70,8 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): Response
     {
+        $this->ensureVisible($invoice);
+
         return Inertia::render('invoices/show', [
             'invoice' => $invoice->load([
                 'client',
@@ -86,6 +88,8 @@ class InvoiceController extends Controller
 
     public function edit(Invoice $invoice): RedirectResponse|Response
     {
+        $this->ensureVisible($invoice);
+
         if (! $invoice->status->isEditable()) {
             Inertia::flash('toast', [
                 'type' => 'error',
@@ -125,6 +129,8 @@ class InvoiceController extends Controller
 
     public function update(InvoiceRequest $request, Invoice $invoice): RedirectResponse
     {
+        $this->ensureVisible($invoice);
+
         if (! $invoice->status->isEditable()) {
             Inertia::flash('toast', [
                 'type' => 'error',
@@ -160,6 +166,8 @@ class InvoiceController extends Controller
         SyncInvoiceStatus $sync,
         ArchiveDocumentPdf $archiver,
     ): RedirectResponse {
+        $this->ensureVisible($invoice);
+
         $invoice->update(['status' => InvoiceStatus::Sent]);
         $sync->handle($invoice);
 
@@ -180,6 +188,8 @@ class InvoiceController extends Controller
 
     public function pdf(Invoice $invoice, ArchiveDocumentPdf $archiver): StreamedResponse
     {
+        $this->ensureVisible($invoice);
+
         $path = $archiver->forInvoice($invoice);
 
         return Storage::disk(ArchiveDocumentPdf::DISK)->download(
@@ -190,6 +200,8 @@ class InvoiceController extends Controller
 
     public function settle(Invoice $invoice, SyncInvoiceStatus $sync): RedirectResponse
     {
+        $this->ensureVisible($invoice);
+
         if (! $invoice->status->isOutstanding() || (float) $invoice->balance_due <= 0) {
             Inertia::flash('toast', [
                 'type' => 'error',
@@ -223,6 +235,8 @@ class InvoiceController extends Controller
 
     public function void(Invoice $invoice): RedirectResponse
     {
+        $this->ensureVisible($invoice);
+
         $invoice->update(['status' => InvoiceStatus::Void]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice dibatalkan.']);
@@ -232,6 +246,8 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice): RedirectResponse
     {
+        $this->ensureVisible($invoice);
+
         $invoice->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Invoice dihapus.']);

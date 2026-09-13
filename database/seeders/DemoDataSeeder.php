@@ -74,7 +74,7 @@ class DemoDataSeeder extends Seeder
     private function seedTeam(): array
     {
         $team = [
-            'admin' => $this->member('Sari Wulandari', 'sari@impostmedia.test', UserRole::Administrator, true),
+            'admin' => $this->member('Sari Wulandari', 'sari@impostmedia.test', UserRole::Manager, true),
             'manager' => $this->member('Rina Kartika', 'rina@impostmedia.test', UserRole::Manager, true),
             'member' => $this->member('Bagas Nugroho', 'bagas@impostmedia.test', UserRole::Member, true),
             'pending' => $this->member('Tio Hermawan', 'tio@impostmedia.test', UserRole::Member, false),

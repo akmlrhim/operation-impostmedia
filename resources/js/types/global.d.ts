@@ -1,4 +1,4 @@
-import type { Auth } from '@/types/auth';
+import type { Auth, UserCan } from '@/types/auth';
 import type { NotificationFeed } from '@/types/notification';
 
 declare module '@inertiajs/core' {
@@ -6,6 +6,7 @@ declare module '@inertiajs/core' {
     sharedPageProps: {
       name: string;
       auth: Auth;
+      can: UserCan;
       sidebarOpen: boolean;
       notifications: NotificationFeed;
       [key: string]: unknown;

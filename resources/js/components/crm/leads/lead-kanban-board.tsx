@@ -6,6 +6,7 @@ import { Kanban } from '@/components/crm/kanban';
 import { LeadKanbanCard } from '@/components/crm/leads/lead-kanban-card';
 import { LeadKanbanColumnHeader } from '@/components/crm/leads/lead-kanban-column-header';
 import { withMovedLead } from '@/components/crm/leads/lead-kanban-utils';
+import { useCan } from '@/lib/use-can';
 import { destroy as destroyStage, reorder as reorderStages } from '@/routes/lead-stages';
 import { convert, destroy, move } from '@/routes/leads';
 import type { LeadCard, LeadStageColumn, Option } from '@/types/crm';
@@ -26,6 +27,7 @@ export function LeadKanbanBoard({
   onEditStage: (stage: LeadStageColumn) => void;
 }) {
   const [confirm, confirmDialog] = useConfirm();
+  const can = useCan();
 
   const columns = useMemo(
     () => stages.map((stage) => ({ id: stage.id, items: stage.leads })),
@@ -86,22 +88,25 @@ export function LeadKanbanBoard({
             },
           )
         }
-        onReorderColumns={(ids) =>
-          router.post(
-            reorderStages(),
-            { ids },
-            {
-              preserveScroll: true,
-              preserveState: true,
-              showProgress: false,
-              async: true,
-              optimistic: (props) => ({
-                stages: ids
-                  .map((id) => (props.stages as LeadStageColumn[]).find((s) => s.id === id))
-                  .filter((stage): stage is LeadStageColumn => stage !== undefined),
-              }),
-            },
-          )
+        onReorderColumns={
+          can['manage-master-data']
+            ? (ids) =>
+                router.post(
+                  reorderStages(),
+                  { ids },
+                  {
+                    preserveScroll: true,
+                    preserveState: true,
+                    showProgress: false,
+                    async: true,
+                    optimistic: (props) => ({
+                      stages: ids
+                        .map((id) => (props.stages as LeadStageColumn[]).find((s) => s.id === id))
+                        .filter((stage): stage is LeadStageColumn => stage !== undefined),
+                    }),
+                  },
+                )
+            : undefined
         }
         renderHeader={(column) => {
           const stage = stages.find((s) => s.id === column.id);
@@ -128,14 +133,16 @@ export function LeadKanbanBoard({
           </button>
         )}
         trailing={
-          <button
-            type="button"
-            onClick={onAddStage}
-            className="mt-8 flex h-fit w-76 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
-          >
-            <Plus className="size-3.5" />
-            Tambah kolom
-          </button>
+          can['manage-master-data'] && (
+            <button
+              type="button"
+              onClick={onAddStage}
+              className="mt-8 flex h-fit w-76 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
+            >
+              <Plus className="size-3.5" />
+              Tambah kolom
+            </button>
+          )
         }
         renderItem={(lead) => (
           <LeadKanbanCard

@@ -65,6 +65,8 @@ class LeadController extends Controller
 
     public function show(Lead $lead): Response
     {
+        $this->ensureVisible($lead);
+
         return Inertia::render('leads/show', [
             ...$this->formProps(),
             ...LeadDetail::props($lead),
@@ -100,6 +102,8 @@ class LeadController extends Controller
 
     public function update(LeadRequest $request, Lead $lead): RedirectResponse
     {
+        $this->ensureVisible($lead);
+
         $data = $request->validated();
         $assignedToIds = $data['assigned_to_ids'] ?? [];
         unset($data['assigned_to_ids']);
@@ -130,6 +134,8 @@ class LeadController extends Controller
 
     public function move(Request $request, Lead $lead): RedirectResponse
     {
+        $this->ensureVisible($lead);
+
         $validated = $request->validate([
             'lead_stage_id' => ['required', 'exists:lead_stages,id'],
             'position' => ['required', 'integer', 'min:0'],
@@ -188,6 +194,8 @@ class LeadController extends Controller
 
     public function convert(Lead $lead, ConvertLeadToClient $converter): RedirectResponse
     {
+        $this->ensureVisible($lead);
+
         if ($lead->status !== LeadStatus::Won && $lead->converted_client_id === null) {
             $lead->update(['status' => LeadStatus::Won]);
         }
@@ -212,6 +220,8 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead): RedirectResponse
     {
+        $this->ensureVisible($lead);
+
         $lead->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lead dihapus.']);

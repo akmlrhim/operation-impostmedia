@@ -16,6 +16,8 @@ class PaymentController extends Controller
 {
     public function store(PaymentRequest $request, Invoice $invoice, SyncInvoiceStatus $sync): RedirectResponse
     {
+        $this->ensureVisible($invoice);
+
         $invoice->payments()->create([
             ...$request->validated(),
             'recorded_by' => auth()->id(),
@@ -41,6 +43,7 @@ class PaymentController extends Controller
     public function destroy(Payment $payment, SyncInvoiceStatus $sync): RedirectResponse
     {
         $invoice = $payment->invoice;
+        $this->ensureVisible($invoice);
         $payment->delete();
         $sync->handle($invoice);
 

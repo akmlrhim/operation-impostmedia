@@ -35,7 +35,7 @@ class ClientController extends Controller
         $direction = $request->string('direction')->toString() === 'desc' ? 'desc' : 'asc';
 
         return Inertia::render('clients/index', [
-            'clients' => ClientIndexQuery::build($filterClientId, $status, $sort, $direction),
+            'clients' => ClientIndexQuery::build($filterClientId, $status, $sort, $direction, $request->user()),
             'filters' => [
                 'status' => $status,
                 'filterClient' => $filterClientId,
@@ -45,6 +45,7 @@ class ClientController extends Controller
             'statuses' => EnumOptions::from(ClientStatus::class),
             'users' => UserOptions::assignable(),
             'filterClients' => Client::query()
+                ->visibleTo($request->user())
                 ->orderBy('company_name')
                 ->get(['id', 'company_name']),
         ]);
@@ -63,13 +64,21 @@ class ClientController extends Controller
 
     public function show(Client $client): Response
     {
+        $this->ensureVisible($client);
+
+        $user = auth()->user();
+
         return Inertia::render('clients/show', [
             'client' => $client->load(['attachments.uploader:id,name', 'assignees:id,name']),
             'contracts' => $client->contracts()
+                ->visibleTo($user)
                 ->select(['id', 'client_id', 'number', 'title', 'value', 'status', 'start_date', 'end_date'])
                 ->latest('id')
                 ->get(),
-            'invoices' => $client->invoices()->latest('id')->get(),
+            'invoices' => $client->invoices()
+                ->visibleTo($user)
+                ->latest('id')
+                ->get(),
             'statuses' => EnumOptions::from(ClientStatus::class),
             'users' => UserOptions::assignable(),
         ]);
@@ -97,6 +106,8 @@ class ClientController extends Controller
 
     public function update(ClientRequest $request, Client $client): RedirectResponse
     {
+        $this->ensureVisible($client);
+
         $data = $request->validated();
         $assignedToIds = $data['assigned_to_ids'] ?? [];
         unset($data['assigned_to_ids']);

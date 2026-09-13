@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\User;
 use App\Support\Crm\Notifier;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
@@ -40,6 +41,34 @@ trait HasOwners
             $meta['subject'].' ditugaskan kepada Anda',
             $meta['url'],
         );
+    }
+
+    /**
+     * Member hanya bisa melihat data yang dibuatnya sendiri atau yang
+     * menugaskannya; Manager ke atas melihat semua.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isManagerOrAbove()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $query) use ($user): void {
+            $query->where('created_by', $user->id)
+                ->orWhereHas('assignees', fn (Builder $assignees) => $assignees->whereKey($user->id));
+        });
+    }
+
+    public function isAccessibleBy(User $user): bool
+    {
+        if ($user->isManagerOrAbove()) {
+            return true;
+        }
+
+        return $this->created_by === $user->id
+            || $this->assignees()->whereKey($user->id)->exists();
     }
 
     /** @return MorphToMany<User, $this> */

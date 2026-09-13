@@ -5,7 +5,6 @@ namespace App\Enums;
 enum UserRole: string implements HasLabel
 {
     case Superuser = 'superuser';
-    case Administrator = 'administrator';
     case Manager = 'manager';
     case Member = 'member';
 
@@ -13,7 +12,6 @@ enum UserRole: string implements HasLabel
     {
         return match ($this) {
             self::Superuser => 'Superuser',
-            self::Administrator => 'Administrator',
             self::Manager => 'Manager',
             self::Member => 'Member',
         };

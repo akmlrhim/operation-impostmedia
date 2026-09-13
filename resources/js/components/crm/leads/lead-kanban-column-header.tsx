@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCan } from '@/lib/use-can';
 import { cn } from '@/lib/utils';
 import type { LeadStageColumn } from '@/types/crm';
 
@@ -32,6 +33,8 @@ export function LeadKanbanColumnHeader({
   onEditStage: () => void;
   onRemoveStage: () => void;
 }) {
+  const can = useCan();
+
   return (
     <>
       <StageDot color={stage.color} type={stage.type} />
@@ -58,28 +61,30 @@ export function LeadKanbanColumnHeader({
         <Plus className="size-3.5" />
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 shrink-0 text-muted-foreground"
-            aria-label={`Kelola kolom ${stage.name}`}
-          >
-            <MoreHorizontal className="size-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={onEditStage}>
-            <Pencil className="size-3.5" />
-            Ubah kolom
-          </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onSelect={onRemoveStage}>
-            <Trash2 className="size-3.5" />
-            Hapus kolom
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {can['manage-master-data'] && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 shrink-0 text-muted-foreground"
+              aria-label={`Kelola kolom ${stage.name}`}
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onEditStage}>
+              <Pencil className="size-3.5" />
+              Ubah kolom
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onRemoveStage}>
+              <Trash2 className="size-3.5" />
+              Hapus kolom
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </>
   );
 }

@@ -7,15 +7,19 @@ use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\Lead;
+use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 
 class DashboardAttention
 {
     /**
      * @return list<array<string, float|int|string>>
      */
-    public static function aging(): array
+    public static function aging(?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $today = now()->startOfDay();
 
         $buckets = [
@@ -26,6 +30,7 @@ class DashboardAttention
         ];
 
         Invoice::query()
+            ->visibleTo($user)
             ->outstanding()
             ->get(['due_date', 'balance_due'])
             ->each(function (Invoice $invoice) use (&$buckets, $today): void {
@@ -48,11 +53,14 @@ class DashboardAttention
     /**
      * @return list<array<string, float|int|string|null>>
      */
-    public static function attention(): array
+    public static function attention(?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $items = [];
 
         $invoices = Invoice::query()
+            ->visibleTo($user)
             ->overdue()
             ->with('client:id,company_name')
             ->orderBy('due_date')
@@ -72,6 +80,7 @@ class DashboardAttention
         }
 
         $leads = Lead::query()
+            ->visibleTo($user)
             ->overdueNextAction()
             ->with('stage:id,name')
             ->orderBy('next_action_date')
@@ -91,6 +100,7 @@ class DashboardAttention
         }
 
         $contracts = Contract::query()
+            ->visibleTo($user)
             ->expiringWithin(60)
             ->with('client:id,company_name')
             ->orderBy('end_date')
@@ -117,13 +127,19 @@ class DashboardAttention
     /**
      * @return list<array{id: int, type: string, title: string, subject: string|null, user: string|null, at: string|null}>
      */
-    public static function activities(?CarbonInterface $monthStart = null): array
+    public static function activities(?CarbonInterface $monthStart = null, ?User $user = null): array
     {
+        $user ??= auth()->user();
+
         $latest = Activity::query()
             ->with(['user:id,name', 'subject'])
             ->when(
                 $monthStart !== null,
                 fn ($query) => $query->whereBetween('created_at', [$monthStart, $monthStart->copy()->endOfMonth()]),
+            )
+            ->when(
+                ! $user->isManagerOrAbove(),
+                fn (Builder $query) => $query->where('user_id', $user->id),
             )
             ->latest()
             ->limit(6)

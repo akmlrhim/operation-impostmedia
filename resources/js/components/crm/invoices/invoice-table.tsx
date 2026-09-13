@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, relativeDueLabel, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { show as showClient } from '@/routes/clients';
 import {
   destroy,
@@ -46,6 +47,7 @@ export function InvoiceTable({
 }) {
   const [confirm, confirmDialog] = useConfirm();
   const selection = useRowSelection(groups.flatMap((group) => group.invoices));
+  const can = useCan();
 
   function toggleGroup(invoices: Invoice[]) {
     const allSelected = invoices.every((invoice) => selection.selected.has(invoice.id));
@@ -59,21 +61,23 @@ export function InvoiceTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <BulkActionsBar
-        count={selection.count}
-        noun="invoice"
-        exportHref={exportInvoices({ query: { ids: Array.from(selection.selected) } }).url}
-        deleteTitle={`Hapus ${selection.count} invoice?`}
-        deleteDescription="Pembayaran yang tercatat ikut terhapus bersama invoice-nya."
-        onDelete={() => {
-          router.delete(destroyBulk().url, {
-            data: { ids: Array.from(selection.selected) },
-            preserveScroll: true,
-            onSuccess: selection.clear,
-          });
-        }}
-        onClear={selection.clear}
-      />
+      {can['manage-records'] && (
+        <BulkActionsBar
+          count={selection.count}
+          noun="invoice"
+          exportHref={exportInvoices({ query: { ids: Array.from(selection.selected) } }).url}
+          deleteTitle={`Hapus ${selection.count} invoice?`}
+          deleteDescription="Pembayaran yang tercatat ikut terhapus bersama invoice-nya."
+          onDelete={() => {
+            router.delete(destroyBulk().url, {
+              data: { ids: Array.from(selection.selected) },
+              preserveScroll: true,
+              onSuccess: selection.clear,
+            });
+          }}
+          onClear={selection.clear}
+        />
+      )}
 
       {groups.length === 0 && (
         <Card className="py-8 text-center text-sm text-muted-foreground">
@@ -188,80 +192,92 @@ export function InvoiceTable({
                       <RowActions
                         label={invoice.number}
                         actions={[
-                          {
-                            label: 'Ubah invoice',
-                            icon: Pencil,
-                            href: edit(invoice.id),
-                            disabledReason:
-                              invoice.status === 'draft' ? undefined : 'Sudah dikirim ke klien.',
-                          },
-                          {
-                            label: 'Tandai terkirim',
-                            icon: Send,
-                            disabledReason:
-                              invoice.status === 'draft' ? undefined : 'Sudah lewat tahap draf.',
-                            onSelect: async () => {
-                              const confirmed = await confirm({
-                                title: `Tandai ${invoice.number} sudah dikirim?`,
-                                description:
-                                  'Invoice mulai dihitung sebagai piutang dan PDF-nya diarsipkan.',
-                                confirmLabel: 'Tandai terkirim',
-                              });
+                          ...(can['manage-finance']
+                            ? [
+                                {
+                                  label: 'Ubah invoice',
+                                  icon: Pencil,
+                                  href: edit(invoice.id),
+                                  disabledReason:
+                                    invoice.status === 'draft'
+                                      ? undefined
+                                      : 'Sudah dikirim ke klien.',
+                                },
+                                {
+                                  label: 'Tandai terkirim',
+                                  icon: Send,
+                                  disabledReason:
+                                    invoice.status === 'draft'
+                                      ? undefined
+                                      : 'Sudah lewat tahap draf.',
+                                  onSelect: async () => {
+                                    const confirmed = await confirm({
+                                      title: `Tandai ${invoice.number} sudah dikirim?`,
+                                      description:
+                                        'Invoice mulai dihitung sebagai piutang dan PDF-nya diarsipkan.',
+                                      confirmLabel: 'Tandai terkirim',
+                                    });
 
-                              if (confirmed) {
-                                router.post(send(invoice.id), {}, { preserveScroll: true });
-                              }
-                            },
-                          },
-                          {
-                            label: 'Lunaskan',
-                            icon: BadgeCheck,
-                            disabledReason: !OUTSTANDING.includes(invoice.status)
-                              ? 'Invoice belum terkirim.'
-                              : Number(invoice.balance_due) <= 0
-                                ? 'Tidak ada sisa tagihan.'
-                                : undefined,
-                            onSelect: async () => {
-                              const confirmed = await confirm({
-                                title: `Lunaskan ${invoice.number}?`,
-                                description: `Sisa ${rupiah(invoice.balance_due)} dicatat sebagai pembayaran transfer hari ini.`,
-                                confirmLabel: 'Lunaskan',
-                              });
+                                    if (confirmed) {
+                                      router.post(send(invoice.id), {}, { preserveScroll: true });
+                                    }
+                                  },
+                                },
+                                {
+                                  label: 'Lunaskan',
+                                  icon: BadgeCheck,
+                                  disabledReason: !OUTSTANDING.includes(invoice.status)
+                                    ? 'Invoice belum terkirim.'
+                                    : Number(invoice.balance_due) <= 0
+                                      ? 'Tidak ada sisa tagihan.'
+                                      : undefined,
+                                  onSelect: async () => {
+                                    const confirmed = await confirm({
+                                      title: `Lunaskan ${invoice.number}?`,
+                                      description: `Sisa ${rupiah(invoice.balance_due)} dicatat sebagai pembayaran transfer hari ini.`,
+                                      confirmLabel: 'Lunaskan',
+                                    });
 
-                              if (confirmed) {
-                                router.post(settle(invoice.id), {}, { preserveScroll: true });
-                              }
-                            },
-                          },
-                          {
-                            label: 'Catat pembayaran',
-                            icon: Wallet,
-                            href: show(invoice.id, { query: { pay: 1 } }),
-                            disabledReason:
-                              invoice.status === 'draft'
-                                ? 'Invoice masih draf.'
-                                : Number(invoice.balance_due) <= 0
-                                  ? 'Tidak ada sisa tagihan.'
-                                  : undefined,
-                          },
-                          {
-                            label: 'Hapus invoice',
-                            icon: Trash2,
-                            destructive: true,
-                            onSelect: async () => {
-                              const confirmed = await confirm({
-                                title: `Hapus invoice ${invoice.number}?`,
-                                description:
-                                  'Nomor invoice yang sudah terpakai tidak dipakai ulang.',
-                                confirmLabel: 'Hapus invoice',
-                                destructive: true,
-                              });
+                                    if (confirmed) {
+                                      router.post(settle(invoice.id), {}, { preserveScroll: true });
+                                    }
+                                  },
+                                },
+                                {
+                                  label: 'Catat pembayaran',
+                                  icon: Wallet,
+                                  href: show(invoice.id, { query: { pay: 1 } }),
+                                  disabledReason:
+                                    invoice.status === 'draft'
+                                      ? 'Invoice masih draf.'
+                                      : Number(invoice.balance_due) <= 0
+                                        ? 'Tidak ada sisa tagihan.'
+                                        : undefined,
+                                },
+                              ]
+                            : []),
+                          ...(can['manage-records']
+                            ? [
+                                {
+                                  label: 'Hapus invoice',
+                                  icon: Trash2,
+                                  destructive: true,
+                                  onSelect: async () => {
+                                    const confirmed = await confirm({
+                                      title: `Hapus invoice ${invoice.number}?`,
+                                      description:
+                                        'Nomor invoice yang sudah terpakai tidak dipakai ulang.',
+                                      confirmLabel: 'Hapus invoice',
+                                      destructive: true,
+                                    });
 
-                              if (confirmed) {
-                                router.delete(destroy(invoice.id), { preserveScroll: true });
-                              }
-                            },
-                          },
+                                    if (confirmed) {
+                                      router.delete(destroy(invoice.id), { preserveScroll: true });
+                                    }
+                                  },
+                                },
+                              ]
+                            : []),
                         ]}
                       />
                     </TableCell>

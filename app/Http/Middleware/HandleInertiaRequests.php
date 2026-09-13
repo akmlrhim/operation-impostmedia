@@ -39,6 +39,13 @@ class HandleInertiaRequests extends Middleware
                     ->append('avatar')
                     ->makeHidden('googleAccount'),
             ],
+            'can' => [
+                'manage-users' => $request->user()?->can('manage-users') ?? false,
+                'manage-master-data' => $request->user()?->can('manage-master-data') ?? false,
+                'manage-finance' => $request->user()?->can('manage-finance') ?? false,
+                'approve-documents' => $request->user()?->can('approve-documents') ?? false,
+                'manage-records' => $request->user()?->can('manage-records') ?? false,
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'notifications' => fn (): array => NotificationFeed::props($request->user()),
         ];

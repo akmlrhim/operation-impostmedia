@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { destroy, destroyBulk, exportMethod as exportClients, show } from '@/routes/clients';
 import { create as createContract, show as showContract } from '@/routes/contracts';
 import { create as createInvoice, show as showInvoice } from '@/routes/invoices';
@@ -40,24 +41,27 @@ export function ClientTable({
 }) {
   const [confirm, confirmDialog] = useConfirm();
   const selection = useRowSelection(clients);
+  const can = useCan();
 
   return (
     <div className="flex flex-col gap-3">
-      <BulkActionsBar
-        count={selection.count}
-        noun="klien"
-        exportHref={exportClients({ query: { ids: Array.from(selection.selected) } }).url}
-        deleteTitle={`Hapus ${selection.count} klien?`}
-        deleteDescription="MoU dan invoice klien ini tetap tersimpan, tapi jadi tanpa klien."
-        onDelete={() => {
-          router.delete(destroyBulk().url, {
-            data: { ids: Array.from(selection.selected) },
-            preserveScroll: true,
-            onSuccess: selection.clear,
-          });
-        }}
-        onClear={selection.clear}
-      />
+      {can['manage-records'] && (
+        <BulkActionsBar
+          count={selection.count}
+          noun="klien"
+          exportHref={exportClients({ query: { ids: Array.from(selection.selected) } }).url}
+          deleteTitle={`Hapus ${selection.count} klien?`}
+          deleteDescription="MoU dan invoice klien ini tetap tersimpan, tapi jadi tanpa klien."
+          onDelete={() => {
+            router.delete(destroyBulk().url, {
+              data: { ids: Array.from(selection.selected) },
+              preserveScroll: true,
+              onSuccess: selection.clear,
+            });
+          }}
+          onClear={selection.clear}
+        />
+      )}
 
       <Card className="overflow-hidden py-0">
         <Table className="min-w-3xl">
@@ -179,24 +183,28 @@ export function ClientTable({
                         icon: Receipt,
                         href: createInvoice({ query: { client: client.id } }),
                       },
-                      {
-                        label: 'Hapus klien',
-                        icon: Trash2,
-                        destructive: true,
-                        onSelect: async () => {
-                          const confirmed = await confirm({
-                            title: `Hapus klien ${client.company_name}?`,
-                            description:
-                              'MoU dan invoice-nya tetap tersimpan, tapi jadi tanpa klien.',
-                            confirmLabel: 'Hapus klien',
-                            destructive: true,
-                          });
+                      ...(can['manage-records']
+                        ? [
+                            {
+                              label: 'Hapus klien',
+                              icon: Trash2,
+                              destructive: true,
+                              onSelect: async () => {
+                                const confirmed = await confirm({
+                                  title: `Hapus klien ${client.company_name}?`,
+                                  description:
+                                    'MoU dan invoice-nya tetap tersimpan, tapi jadi tanpa klien.',
+                                  confirmLabel: 'Hapus klien',
+                                  destructive: true,
+                                });
 
-                          if (confirmed) {
-                            router.delete(destroy(client.id), { preserveScroll: true });
-                          }
-                        },
-                      },
+                                if (confirmed) {
+                                  router.delete(destroy(client.id), { preserveScroll: true });
+                                }
+                              },
+                            },
+                          ]
+                        : []),
                     ]}
                   />
                 </TableCell>
