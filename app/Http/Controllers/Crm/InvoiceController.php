@@ -12,6 +12,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Crm\BulkIdsRequest;
 use App\Http\Requests\Crm\InvoiceRequest;
+use App\Http\Requests\Crm\SettleInvoiceRequest;
 use App\Models\Client;
 use App\Models\DocumentSequence;
 use App\Models\Invoice;
@@ -198,8 +199,11 @@ class InvoiceController extends Controller
         );
     }
 
-    public function settle(Invoice $invoice, SyncInvoiceStatus $sync): RedirectResponse
-    {
+    public function settle(
+        SettleInvoiceRequest $request,
+        Invoice $invoice,
+        SyncInvoiceStatus $sync,
+    ): RedirectResponse {
         $this->ensureVisible($invoice);
 
         if (! $invoice->status->isOutstanding() || (float) $invoice->balance_due <= 0) {
@@ -211,12 +215,16 @@ class InvoiceController extends Controller
             return back();
         }
 
-        $invoice->payments()->create([
+        $payment = $invoice->payments()->create([
             'amount' => $invoice->balance_due,
             'paid_at' => now()->toDateString(),
             'method' => PaymentMethod::Transfer,
             'recorded_by' => auth()->id(),
         ]);
+
+        if ($request->hasFile('proof')) {
+            $payment->update(['proof_path' => $payment->replaceProof($request->file('proof'))]);
+        }
 
         $sync->handle($invoice);
 

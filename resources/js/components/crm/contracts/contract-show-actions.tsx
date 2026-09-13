@@ -52,7 +52,7 @@ export function ContractShowActions({
         </Link>
       </Button>
 
-      {can['approve-documents'] && SIGNABLE.includes(contract.status) && (
+      {can['approve-contracts'] && SIGNABLE.includes(contract.status) && (
         <Button aria-label="Tandatangani MoU" onClick={onSign}>
           <PenLine className="size-4" />
           <span className="hidden sm:inline">Tandatangani</span>
@@ -67,7 +67,7 @@ export function ContractShowActions({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          {can['approve-documents'] && (
+          {can['approve-contracts'] && (
             <DropdownMenuItem
               onSelect={() => router.post(finalize(contract.id), {}, { preserveScroll: true })}
             >
@@ -83,7 +83,7 @@ export function ContractShowActions({
             </a>
           </DropdownMenuItem>
 
-          {can['manage-records'] && (
+          {can['delete-contracts'] && (
             <>
               <DropdownMenuSeparator />
 

@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { ImageIcon, Trash2 } from 'lucide-react';
 import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +41,19 @@ export function InvoiceShowPaymentsCard({
                 {methods.find((m) => m.value === item.method)?.label ?? item.method}
               </p>
             </div>
-            {can['manage-finance'] && (
+            {item.proof_url && (
+              <Button variant="outline" size="icon" className="size-8 shrink-0" asChild>
+                <a
+                  href={item.proof_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Lihat bukti pembayaran"
+                >
+                  <ImageIcon className="size-4" />
+                </a>
+              </Button>
+            )}
+            {can['manage-payments'] && (
               <Button
                 variant="ghost"
                 size="icon"

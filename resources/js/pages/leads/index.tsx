@@ -114,7 +114,7 @@ export default function LeadsIndex({
         title="Leads"
         actions={
           <>
-            {tab === 'kanban' && can['manage-master-data'] && (
+            {tab === 'kanban' && can['manage-lead-stages'] && (
               <Button variant="outline" onClick={() => setStageModal({})}>
                 <Columns3 className="size-4" />
                 Kolom baru

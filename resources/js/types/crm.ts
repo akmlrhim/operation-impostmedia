@@ -201,6 +201,7 @@ export type Payment = {
   paid_at: string;
   method: string;
   notes: string | null;
+  proof_url?: string | null;
   recorder?: UserRef | null;
 };
 

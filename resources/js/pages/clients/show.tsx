@@ -65,7 +65,7 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
                 Buat invoice
               </Link>
             </Button>
-            {can['manage-records'] && (
+            {can['delete-clients'] && (
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -104,7 +104,9 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
                       <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
                         Kode singkat
                       </th>
-                      <td className="border-l border-border px-3 py-2">{client.short_code || '-'}</td>
+                      <td className="border-l border-border px-3 py-2">
+                        {client.short_code || '-'}
+                      </td>
                     </tr>
                     <tr>
                       <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
@@ -134,13 +136,17 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
                       <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
                         Nama PIC
                       </th>
-                      <td className="border-l border-border px-3 py-2">{client.contact_name || '-'}</td>
+                      <td className="border-l border-border px-3 py-2">
+                        {client.contact_name || '-'}
+                      </td>
                     </tr>
                     <tr>
                       <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
                         Jabatan PIC
                       </th>
-                      <td className="border-l border-border px-3 py-2">{client.contact_position || '-'}</td>
+                      <td className="border-l border-border px-3 py-2">
+                        {client.contact_position || '-'}
+                      </td>
                     </tr>
                     <tr>
                       <th className="w-1/3 px-3 py-2 text-left align-top text-[0.6875rem] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
@@ -179,7 +185,7 @@ export default function ClientShow({ client, contracts, invoices, statuses, user
           <ClientContractsCard contracts={contracts} />
           <ClientInvoicesCard invoices={invoices} />
           <AttachmentsCard type="clients" id={client.id} attachments={client.attachments ?? []} />
-          </div>
+        </div>
       </PageBody>
 
       {editModal && (

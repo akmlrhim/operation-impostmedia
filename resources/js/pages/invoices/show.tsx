@@ -9,6 +9,7 @@ import { InvoiceShowSummaryCard } from '@/components/crm/invoices/invoice-show-s
 import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { PaymentFormModal } from '@/components/crm/payment-form-modal';
+import { SettleInvoiceModal } from '@/components/crm/settle-modal';
 import { StatusBadge } from '@/components/crm/status-badge';
 import { useRealtime } from '@/hooks/use-realtime';
 import { stripQueryParams } from '@/lib/url';
@@ -28,6 +29,7 @@ export default function InvoiceShow({ invoice, statuses, methods }: Props) {
   const [paymentModal, setPaymentModal] = useState(
     () => new URLSearchParams(window.location.search).get('pay') === '1',
   );
+  const [settleModal, setSettleModal] = useState(false);
 
   return (
     <>
@@ -42,6 +44,7 @@ export default function InvoiceShow({ invoice, statuses, methods }: Props) {
             invoice={invoice}
             confirm={confirm}
             onPay={() => setPaymentModal(true)}
+            onSettle={() => setSettleModal(true)}
             onDelete={() => router.delete(destroy(invoice.id))}
           />
         }
@@ -69,6 +72,10 @@ export default function InvoiceShow({ invoice, statuses, methods }: Props) {
             stripQueryParams(['pay']);
           }}
         />
+      )}
+
+      {settleModal && (
+        <SettleInvoiceModal invoice={invoice} onClose={() => setSettleModal(false)} />
       )}
 
       {confirmDialog}

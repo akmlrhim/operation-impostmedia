@@ -12,6 +12,7 @@ export function ImageUpload({
   onSelect,
   onRemove,
   emptyLabel = 'Belum ada gambar',
+  sizeHint = 'PNG atau JPG, maksimal 2 MB.',
   className,
 }: {
   id: string;
@@ -21,6 +22,7 @@ export function ImageUpload({
   onSelect: (file: File | null) => void;
   onRemove: () => void;
   emptyLabel?: string;
+  sizeHint?: string;
   className?: string;
 }) {
   const previewUrl = useMemo(() => (file === null ? null : URL.createObjectURL(file)), [file]);
@@ -71,9 +73,7 @@ export function ImageUpload({
           )}
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          {shown ? 'PNG atau JPG, maksimal 2 MB.' : emptyLabel}
-        </p>
+        <p className="text-xs text-muted-foreground">{shown ? sizeHint : emptyLabel}</p>
       </div>
 
       <input

@@ -10,7 +10,9 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\Crm\Notifier;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentController extends Controller
 {
@@ -18,10 +20,18 @@ class PaymentController extends Controller
     {
         $this->ensureVisible($invoice);
 
-        $invoice->payments()->create([
-            ...$request->validated(),
+        $data = $request->validated();
+        $file = $data['proof'] ?? null;
+        unset($data['proof']);
+
+        $payment = $invoice->payments()->create([
+            ...$data,
             'recorded_by' => auth()->id(),
         ]);
+
+        if ($file !== null) {
+            $payment->update(['proof_path' => $payment->replaceProof($file)]);
+        }
 
         $sync->handle($invoice);
 
@@ -38,6 +48,19 @@ class PaymentController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pembayaran dicatat.']);
 
         return to_route('invoices.show', $invoice);
+    }
+
+    public function proof(Payment $payment): StreamedResponse
+    {
+        $this->ensureVisible($payment->invoice);
+
+        $disk = Storage::disk(Payment::PROOF_DISK);
+
+        abort_if($payment->proof_path === null || ! $disk->exists($payment->proof_path), 404);
+
+        return $disk->response($payment->proof_path, headers: [
+            'Cache-Control' => 'private, max-age=604800',
+        ]);
     }
 
     public function destroy(Payment $payment, SyncInvoiceStatus $sync): RedirectResponse

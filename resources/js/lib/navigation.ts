@@ -7,11 +7,13 @@ import {
   PieChart,
   Receipt,
   Settings2,
+  ShieldCheck,
   Target,
   Users,
   Wallet,
 } from 'lucide-react';
 import { dashboard } from '@/routes';
+import { index as accessIndex } from '@/routes/access';
 import { index as clientsIndex } from '@/routes/clients';
 import { edit as companyEdit } from '@/routes/company';
 import { create as contractsCreate, index as contractsIndex } from '@/routes/contracts';
@@ -21,9 +23,9 @@ import { create as invoicesCreate, index as invoicesIndex } from '@/routes/invoi
 import { index as leadsIndex } from '@/routes/leads';
 import { index as servicesIndex } from '@/routes/services';
 import { index as usersIndex } from '@/routes/users';
-import type { NavGroup, UserRole } from '@/types';
+import type { NavGroup, UserCan, UserRole } from '@/types';
 
-export function navGroupsFor(role: UserRole | undefined): NavGroup[] {
+export function navGroupsFor(role: UserRole | undefined, can: Partial<UserCan>): NavGroup[] {
   const groups: NavGroup[] = [
     {
       items: [{ title: 'Beranda', href: dashboard(), icon: LayoutGrid }],
@@ -54,18 +56,31 @@ export function navGroupsFor(role: UserRole | undefined): NavGroup[] {
     items: [],
   };
 
-  if (role !== 'member') {
+  const canManageMasterData =
+    can['manage-services'] || can['manage-lead-stages'] || can['manage-company-settings'];
+
+  if (can['view-finance']) {
     finance.items.push({ title: 'Ringkasan', href: financeDashboard(), icon: PieChart });
     finance.items.push({ title: 'Pemasukan & Pengeluaran', href: financeIndex(), icon: Wallet });
-    groups.push(finance, masterData);
+  }
+
+  if (canManageMasterData) {
+    groups.push(masterData);
+  }
+
+  if (can['manage-company-settings']) {
     settings.items.push({ title: 'Perusahaan', href: companyEdit(), icon: Settings2 });
-  } else {
-    groups.push(finance);
+  }
+
+  if (can['manage-users']) {
+    settings.items.push({ title: 'Pengguna', href: usersIndex(), icon: Users });
   }
 
   if (role === 'superuser') {
-    settings.items.push({ title: 'Pengguna', href: usersIndex(), icon: Users });
+    settings.items.push({ title: 'Hak Akses', href: accessIndex(), icon: ShieldCheck });
   }
+
+  groups.push(finance);
 
   return [...groups, settings];
 }

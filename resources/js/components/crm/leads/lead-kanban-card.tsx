@@ -90,14 +90,14 @@ export function LeadKanbanCard({
                 Ubah lead
               </DropdownMenuItem>
 
-              {can['manage-records'] && lead.converted_client_id === null && (
+              {can['convert-leads'] && lead.converted_client_id === null && (
                 <DropdownMenuItem onSelect={onConvert}>
                   <ArrowRightLeft className="size-3.5" />
                   Jadikan klien
                 </DropdownMenuItem>
               )}
 
-              {can['manage-records'] && (
+              {can['delete-leads'] && (
                 <DropdownMenuItem variant="destructive" onSelect={onDelete}>
                   <Trash2 className="size-3.5" />
                   Hapus lead

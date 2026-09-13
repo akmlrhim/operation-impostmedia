@@ -22,13 +22,13 @@ export function CommandPalette({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { auth } = usePage().props;
+  const { auth, can } = usePage().props;
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
   const entries = useMemo<Entry[]>(() => {
-    const fromNav = navGroupsFor(auth.user?.role).flatMap((group) =>
+    const fromNav = navGroupsFor(auth.user?.role, can).flatMap((group) =>
       group.items.map((item) => ({
         key: `nav-${item.title}`,
         group: group.label ?? 'Modul',
@@ -48,7 +48,7 @@ export function CommandPalette({
     }));
 
     return [...fromNav, ...fromActions];
-  }, [auth.user?.role]);
+  }, [auth.user?.role, can]);
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();

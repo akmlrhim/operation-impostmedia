@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Enums\Permission;
+use App\Models\RolePermission;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -87,13 +89,14 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureGates(): void
     {
-        $isSuperuser = fn (User $user): bool => $user->isSuperuser();
-        $isManagerOrAbove = fn (User $user): bool => $user->isManagerOrAbove();
+        Gate::before(fn (User $user): ?bool => $user->isSuperuser() ? true : null);
 
-        Gate::define('manage-users', $isSuperuser);
-        Gate::define('manage-master-data', $isManagerOrAbove);
-        Gate::define('manage-finance', $isManagerOrAbove);
-        Gate::define('approve-documents', $isManagerOrAbove);
-        Gate::define('manage-records', $isManagerOrAbove);
+        foreach (Permission::cases() as $permission) {
+            Gate::define($permission->value, fn (User $user): bool => in_array(
+                $permission->value,
+                RolePermission::grants($user->role),
+                true,
+            ));
+        }
     }
 }

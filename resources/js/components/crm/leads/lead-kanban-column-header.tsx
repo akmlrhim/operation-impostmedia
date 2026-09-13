@@ -61,7 +61,7 @@ export function LeadKanbanColumnHeader({
         <Plus className="size-3.5" />
       </Button>
 
-      {can['manage-master-data'] && (
+      {can['manage-lead-stages'] && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

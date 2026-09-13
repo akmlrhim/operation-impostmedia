@@ -12,7 +12,7 @@ class ContractSignRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'signature' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'signature' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'signed_date' => ['nullable', 'date'],
         ];
     }

@@ -36,7 +36,7 @@ export function ContractShowClausesCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {can['approve-documents'] && aiEnabled && (
+          {can['update-contracts'] && aiEnabled && (
             <Button
               type="button"
               variant="outline"

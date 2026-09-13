@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests\Crm;
 
-use App\Enums\PaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class PaymentRequest extends FormRequest
+class SettleInvoiceRequest extends FormRequest
 {
     /**
      * @return array<string, mixed>
@@ -14,10 +12,6 @@ class PaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:1'],
-            'paid_at' => ['required', 'date'],
-            'method' => ['required', Rule::enum(PaymentMethod::class)],
-            'notes' => ['nullable', 'string'],
             'proof' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
         ];
     }
@@ -28,9 +22,6 @@ class PaymentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'amount' => 'jumlah',
-            'paid_at' => 'tanggal bayar',
-            'method' => 'metode',
             'proof' => 'bukti pembayaran',
         ];
     }

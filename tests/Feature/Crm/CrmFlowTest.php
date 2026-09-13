@@ -18,6 +18,7 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\CrmMasterDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -530,7 +531,9 @@ class CrmFlowTest extends TestCase
             'status' => ContractStatus::Draft,
         ]);
 
-        $this->post(route('contracts.sign', $contract))->assertRedirect();
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd.png'),
+        ])->assertRedirect();
 
         $contract->refresh();
         $this->assertSame(ContractStatus::Signed, $contract->status);
@@ -551,7 +554,9 @@ class CrmFlowTest extends TestCase
             'signed_date' => '2026-01-05',
         ]);
 
-        $this->post(route('contracts.sign', $contract))->assertRedirect();
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd.png'),
+        ])->assertRedirect();
 
         $contract->refresh();
         $this->assertSame(ContractStatus::Signed, $contract->status);
@@ -571,7 +576,9 @@ class CrmFlowTest extends TestCase
             'signed_date' => '2026-01-05',
         ]);
 
-        $this->post(route('contracts.sign', $contract))->assertRedirect();
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd.png'),
+        ])->assertRedirect();
 
         $this->assertSame(ContractStatus::Completed, $contract->fresh()->status);
     }

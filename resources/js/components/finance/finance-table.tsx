@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { useRowSelection } from '@/hooks/use-row-selection';
 import { formatDate, rupiah } from '@/lib/format';
+import { useCan } from '@/lib/use-can';
 import { destroy, destroyBulk, exportMethod } from '@/routes/finance';
 import type { FinanceSummary, FinanceTransaction } from '@/types/finance';
 
@@ -37,24 +38,27 @@ export function FinanceTable({
 }) {
   const [confirm, confirmDialog] = useConfirm();
   const selection = useRowSelection(transactions);
+  const can = useCan();
 
   return (
     <div className="flex flex-col gap-3">
-      <BulkActionsBar
-        count={selection.count}
-        noun="transaksi"
-        exportHref={exportMethod({ query: { ids: Array.from(selection.selected) } }).url}
-        deleteTitle={`Hapus ${selection.count} transaksi?`}
-        deleteDescription="Transaksi yang dihapus tidak bisa dikembalikan."
-        onDelete={() => {
-          router.delete(destroyBulk().url, {
-            data: { ids: Array.from(selection.selected) },
-            preserveScroll: true,
-            onSuccess: selection.clear,
-          });
-        }}
-        onClear={selection.clear}
-      />
+      {(can['manage-finance'] || can['export-finance']) && (
+        <BulkActionsBar
+          count={selection.count}
+          noun="transaksi"
+          exportHref={exportMethod({ query: { ids: Array.from(selection.selected) } }).url}
+          deleteTitle={`Hapus ${selection.count} transaksi?`}
+          deleteDescription="Transaksi yang dihapus tidak bisa dikembalikan."
+          onDelete={() => {
+            router.delete(destroyBulk().url, {
+              data: { ids: Array.from(selection.selected) },
+              preserveScroll: true,
+              onSuccess: selection.clear,
+            });
+          }}
+          onClear={selection.clear}
+        />
+      )}
 
       <Card className="overflow-hidden py-0">
         <Table>
@@ -126,28 +130,34 @@ export function FinanceTable({
                     <RowActions
                       label={transaction.category}
                       actions={[
-                        {
-                          label: 'Ubah transaksi',
-                          icon: Pencil,
-                          onSelect: () => onEdit(transaction),
-                        },
-                        {
-                          label: 'Hapus transaksi',
-                          icon: Trash2,
-                          destructive: true,
-                          onSelect: async () => {
-                            const confirmed = await confirm({
-                              title: `Hapus transaksi ${transaction.category}?`,
-                              description: 'Transaksi yang dihapus tidak bisa dikembalikan.',
-                              confirmLabel: 'Hapus transaksi',
-                              destructive: true,
-                            });
+                        ...(can['manage-finance']
+                          ? [
+                              {
+                                label: 'Ubah transaksi',
+                                icon: Pencil,
+                                onSelect: () => onEdit(transaction),
+                              },
+                              {
+                                label: 'Hapus transaksi',
+                                icon: Trash2,
+                                destructive: true,
+                                onSelect: async () => {
+                                  const confirmed = await confirm({
+                                    title: `Hapus transaksi ${transaction.category}?`,
+                                    description: 'Transaksi yang dihapus tidak bisa dikembalikan.',
+                                    confirmLabel: 'Hapus transaksi',
+                                    destructive: true,
+                                  });
 
-                            if (confirmed) {
-                              router.delete(destroy(transaction.id), { preserveScroll: true });
-                            }
-                          },
-                        },
+                                  if (confirmed) {
+                                    router.delete(destroy(transaction.id), {
+                                      preserveScroll: true,
+                                    });
+                                  }
+                                },
+                              },
+                            ]
+                          : []),
                       ]}
                     />
                   </TableCell>
@@ -173,10 +183,7 @@ export function FinanceTable({
               <TableCell colSpan={3} className="text-xs tracking-wide uppercase">
                 Saldo
               </TableCell>
-              <TableCell
-                colSpan={2}
-                className="text-right num"
-              >
+              <TableCell colSpan={2} className="text-right num">
                 {rupiah(summary.net)}
               </TableCell>
               <TableCell />

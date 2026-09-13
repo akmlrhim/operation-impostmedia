@@ -89,7 +89,7 @@ export function LeadKanbanBoard({
           )
         }
         onReorderColumns={
-          can['manage-master-data']
+          can['manage-lead-stages']
             ? (ids) =>
                 router.post(
                   reorderStages(),
@@ -133,7 +133,7 @@ export function LeadKanbanBoard({
           </button>
         )}
         trailing={
-          can['manage-master-data'] && (
+          can['manage-lead-stages'] && (
             <button
               type="button"
               onClick={onAddStage}

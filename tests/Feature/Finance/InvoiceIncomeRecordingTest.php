@@ -8,6 +8,8 @@ use App\Models\FinanceTransaction;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class InvoiceIncomeRecordingTest extends TestCase
@@ -116,6 +118,60 @@ class InvoiceIncomeRecordingTest extends TestCase
             'type' => 'income',
             'amount' => '8880000.00',
         ]);
+    }
+
+    public function test_a_payment_can_carry_a_transfer_proof(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('payments.store', $invoice), [
+            'amount' => 5_000_000,
+            'paid_at' => '2026-01-10',
+            'method' => 'transfer',
+            'proof' => UploadedFile::fake()->image('bukti-transfer.png'),
+        ])->assertRedirect();
+
+        $payment = $invoice->payments()->firstOrFail();
+
+        $this->assertNotNull($payment->proof_path);
+        Storage::disk('local')->assertExists($payment->proof_path);
+
+        $this->get(route('payments.proof', $payment))->assertOk();
+    }
+
+    public function test_settling_an_invoice_can_carry_a_transfer_proof(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('invoices.settle', $invoice), [
+            'proof' => UploadedFile::fake()->image('bukti-lunas.png'),
+        ])->assertRedirect();
+
+        $payment = $invoice->payments()->firstOrFail();
+
+        $this->assertSame(InvoiceStatus::Paid, $invoice->fresh()->status);
+        $this->assertNotNull($payment->proof_path);
+        Storage::disk('local')->assertExists($payment->proof_path);
+
+        $this->get(route('payments.proof', $payment))->assertOk();
+    }
+
+    public function test_deleting_a_payment_removes_its_proof_file(): void
+    {
+        $invoice = $this->makeSentInvoice();
+
+        $this->post(route('payments.store', $invoice), [
+            'amount' => '8880000',
+            'paid_at' => '2026-01-10',
+            'method' => 'transfer',
+            'proof' => UploadedFile::fake()->image('bukti-transfer.png'),
+        ])->assertRedirect();
+
+        $payment = $invoice->payments()->firstOrFail();
+
+        $this->delete(route('payments.destroy', $payment))->assertRedirect();
+
+        Storage::disk('local')->assertMissing($payment->proof_path);
     }
 
     private function makeSentInvoice(): Invoice

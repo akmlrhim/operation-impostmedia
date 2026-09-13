@@ -45,7 +45,7 @@ export function ClientTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {can['manage-records'] && (
+      {(can['delete-clients'] || can['export-clients']) && (
         <BulkActionsBar
           count={selection.count}
           noun="klien"
@@ -183,7 +183,7 @@ export function ClientTable({
                         icon: Receipt,
                         href: createInvoice({ query: { client: client.id } }),
                       },
-                      ...(can['manage-records']
+                      ...(can['delete-clients']
                         ? [
                             {
                               label: 'Hapus klien',

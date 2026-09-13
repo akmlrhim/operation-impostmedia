@@ -249,17 +249,16 @@ class DocumentFilesTest extends TestCase
         );
     }
 
-    public function test_signing_without_an_upload_leaves_the_mou_signature_empty(): void
+    public function test_signing_requires_an_uploaded_client_signature(): void
     {
         $contract = $this->makeDraftContract();
 
-        $this->post(route('contracts.sign', $contract))->assertRedirect();
+        $this->post(route('contracts.sign', $contract))->assertSessionHasErrors('signature');
 
         $contract->refresh();
 
         $this->assertNull($contract->signature_path);
-        $this->assertSame('signed', $contract->status->value);
-        $this->get(route('contracts.signature', $contract))->assertNotFound();
+        $this->assertSame('draft', $contract->status->value);
     }
 
     public function test_a_signature_that_is_not_an_image_is_refused(): void

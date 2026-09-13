@@ -2,20 +2,21 @@ import { Link, router } from '@inertiajs/react';
 import { BadgeCheck, Ban, Download, Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import type { ConfirmFn } from '@/components/crm/confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { rupiah } from '@/lib/format';
 import { useCan } from '@/lib/use-can';
-import { edit, pdf, send, settle, voidMethod as voidInvoice } from '@/routes/invoices';
+import { edit, pdf, send, voidMethod as voidInvoice } from '@/routes/invoices';
 import type { Invoice } from '@/types/crm';
 
 export function InvoiceShowActions({
   invoice,
   confirm,
   onPay,
+  onSettle,
   onDelete,
 }: {
   invoice: Invoice;
   confirm: ConfirmFn;
   onPay: () => void;
+  onSettle: () => void;
   onDelete: () => void;
 }) {
   const balance = Number(invoice.balance_due);
@@ -25,7 +26,7 @@ export function InvoiceShowActions({
 
   return (
     <>
-      {isDraft && can['manage-finance'] && (
+      {isDraft && can['update-invoices'] && (
         <>
           <Button variant="outline" asChild>
             <Link href={edit(invoice.id)} aria-label="Ubah invoice">
@@ -43,27 +44,14 @@ export function InvoiceShowActions({
         </>
       )}
 
-      {can['manage-finance'] && !isDraft && !isVoid && balance > 0 && (
+      {can['update-invoices'] && !isDraft && !isVoid && balance > 0 && (
         <>
           <Button variant="outline" aria-label="Catat pembayaran" onClick={onPay}>
             <Plus className="size-4" />
             <span className="hidden sm:inline">Catat pembayaran</span>
           </Button>
 
-          <Button
-            aria-label="Lunaskan invoice"
-            onClick={async () => {
-              const confirmed = await confirm({
-                title: `Lunaskan ${invoice.number}?`,
-                description: `Sisa ${rupiah(invoice.balance_due)} dicatat sebagai pembayaran transfer hari ini.`,
-                confirmLabel: 'Lunaskan',
-              });
-
-              if (confirmed) {
-                router.post(settle(invoice.id), {}, { preserveScroll: true });
-              }
-            }}
-          >
+          <Button aria-label="Lunaskan invoice" onClick={onSettle}>
             <BadgeCheck className="size-4" />
             <span className="hidden sm:inline">Lunaskan</span>
           </Button>
@@ -77,7 +65,7 @@ export function InvoiceShowActions({
         </a>
       </Button>
 
-      {can['manage-finance'] && !isVoid && !isDraft && (
+      {can['update-invoices'] && !isVoid && !isDraft && (
         <Button
           variant="ghost"
           size="icon"
@@ -100,7 +88,7 @@ export function InvoiceShowActions({
         </Button>
       )}
 
-      {can['manage-records'] && (
+      {can['delete-invoices'] && (
         <Button
           variant="ghost"
           size="icon"

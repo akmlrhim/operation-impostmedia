@@ -61,7 +61,7 @@ export function InvoiceTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {can['manage-records'] && (
+      {(can['delete-invoices'] || can['export-invoices']) && (
         <BulkActionsBar
           count={selection.count}
           noun="invoice"
@@ -192,7 +192,7 @@ export function InvoiceTable({
                       <RowActions
                         label={invoice.number}
                         actions={[
-                          ...(can['manage-finance']
+                          ...(can['update-invoices']
                             ? [
                                 {
                                   label: 'Ubah invoice',
@@ -256,7 +256,7 @@ export function InvoiceTable({
                                 },
                               ]
                             : []),
-                          ...(can['manage-records']
+                          ...(can['delete-invoices']
                             ? [
                                 {
                                   label: 'Hapus invoice',

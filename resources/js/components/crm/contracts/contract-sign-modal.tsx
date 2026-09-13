@@ -34,16 +34,6 @@ export function ContractSignModal({
       onSubmit={(e) => {
         e.preventDefault();
 
-        form.transform((data) => {
-          const payload: Record<string, unknown> = { ...data };
-
-          if (data.signature === null) {
-            delete payload.signature;
-          }
-
-          return payload;
-        });
-
         form.post(sign(contract.id).url, {
           preserveScroll: true,
           forceFormData: true,
@@ -62,7 +52,8 @@ export function ContractSignModal({
       }
     >
       <p className="text-sm text-muted-foreground">
-        Status MoU berubah jadi Ditandatangani dan siap ditagihkan.
+        Status MoU berubah jadi Ditandatangani dan siap ditagihkan. Tanda tangan klien wajib
+        diunggah supaya PDF MoU memuat tanda tangan yang sudah dibubuhkan klien.
       </p>
 
       <Field label="Tanggal tanda tangan" htmlFor="signed_date" error={form.errors.signed_date}>
@@ -76,7 +67,8 @@ export function ContractSignModal({
 
       <Field
         label="Tanda tangan klien"
-        hint="Tersimpan pada MoU ini dan tercetak di blok tanda tangan pihak pertama."
+        required
+        hint="Unggah scan/foto tanda tangan yang sudah dibubuhkan klien. Tercetak di blok CLIENT pada PDF MoU."
         error={form.errors.signature}
       >
         <ImageUpload
@@ -84,7 +76,7 @@ export function ContractSignModal({
           currentUrl={signatureUrl}
           file={form.data.signature}
           removed={false}
-          emptyLabel="Boleh dikosongkan kalau tanda tangan dibubuhkan basah di atas kertas."
+          emptyLabel="Unggah scan atau foto tanda tangan klien yang sudah ditandatangani."
           onSelect={(file) => form.setData('signature', file)}
           onRemove={() => form.setData('signature', null)}
         />

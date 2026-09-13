@@ -54,7 +54,7 @@ export function LeadTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {can['manage-records'] && (
+      {(can['export-leads'] || can['delete-leads']) && (
         <BulkActionsBar
           count={selection.count}
           noun="lead"
@@ -80,7 +80,7 @@ export function LeadTable({
             style={{ backgroundColor: stage.color ?? 'var(--border)' }}
           />
           <h3 className="text-sm font-semibold">{stage.name}</h3>
-          <span className="num rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          <span className="rounded-full bg-muted px-2 py-0.5 num text-xs text-muted-foreground">
             {leads.length}
           </span>
         </div>
@@ -215,7 +215,7 @@ export function LeadTable({
                         onSelect: () => router.visit(show(lead.id)),
                       },
                       { label: 'Ubah lead', icon: Pencil, onSelect: () => onEdit(lead) },
-                      ...(can['manage-records'] && lead.converted_client_id === null
+                      ...(can['convert-leads'] && lead.converted_client_id === null
                         ? [
                             {
                               label: 'Jadikan klien',
@@ -224,7 +224,7 @@ export function LeadTable({
                             },
                           ]
                         : []),
-                      ...(can['manage-records']
+                      ...(can['delete-leads']
                         ? [
                             {
                               label: 'Hapus lead',

@@ -60,7 +60,7 @@ export function ContractTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {can['manage-records'] && (
+      {(can['delete-contracts'] || can['export-contracts']) && (
         <BulkActionsBar
           count={selection.count}
           noun="MoU"
@@ -184,7 +184,7 @@ export function ContractTable({
                             icon: Pencil,
                             href: edit(contract.id),
                           },
-                          ...(can['approve-documents']
+                          ...(can['approve-contracts']
                             ? [
                                 {
                                   label: 'Tandatangani',
@@ -207,7 +207,7 @@ export function ContractTable({
                                 },
                               ]
                             : []),
-                          ...(can['manage-records']
+                          ...(can['delete-contracts']
                             ? [
                                 {
                                   label: 'Hapus MoU',

@@ -24,7 +24,7 @@ export function ContractShowInvoicesCard({
       <CardHeader className="flex-row flex-wrap items-center gap-3">
         <CardTitle className="mr-auto text-base">Invoice terkait</CardTitle>
 
-        {can['approve-documents'] && invoiceBlocker === null && (
+        {can['approve-contracts'] && invoiceBlocker === null && (
           <Button
             size="sm"
             variant="outline"

@@ -9,6 +9,7 @@ use App\Models\LeadStage;
 use App\Models\User;
 use App\Notifications\CrmEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -102,8 +103,10 @@ class NotificationTest extends TestCase
 
         $this->teammate->notifications()->delete();
 
-        $this->post(route('contracts.sign', $contract), ['signed_date' => '2026-09-02'])
-            ->assertRedirect();
+        $this->post(route('contracts.sign', $contract), [
+            'signature' => UploadedFile::fake()->image('ttd.png'),
+            'signed_date' => '2026-09-02',
+        ])->assertRedirect();
 
         $notification = $this->teammate->notifications()->firstOrFail();
 

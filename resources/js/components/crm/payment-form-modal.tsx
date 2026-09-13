@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Field, FormGrid } from '@/components/crm/field';
 import { FormModal } from '@/components/crm/form-modal';
+import { ImageUpload } from '@/components/crm/image-upload';
 import { Button } from '@/components/ui/button';
 import { DateField } from '@/components/ui/date-field';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -29,6 +30,7 @@ export function PaymentFormModal({ invoice, methods, onClose }: Props) {
     paid_at: new Date().toISOString().slice(0, 10),
     method: 'transfer',
     notes: '',
+    proof: null as File | null,
   });
 
   return (
@@ -38,7 +40,22 @@ export function PaymentFormModal({ invoice, methods, onClose }: Props) {
       onOpenChange={(open) => !open && onClose()}
       onSubmit={(e) => {
         e.preventDefault();
-        form.submit(store(invoice.id), { preserveScroll: true, onSuccess: onClose });
+
+        form.transform((data) => {
+          const payload: Record<string, unknown> = { ...data };
+
+          if (data.proof === null) {
+            delete payload.proof;
+          }
+
+          return payload;
+        });
+
+        form.submit(store(invoice.id), {
+          preserveScroll: true,
+          forceFormData: true,
+          onSuccess: onClose,
+        });
       }}
       footer={
         <>
@@ -95,6 +112,24 @@ export function PaymentFormModal({ invoice, methods, onClose }: Props) {
             value={form.data.notes}
             onChange={(e) => form.setData('notes', e.target.value)}
             placeholder="Masukkan catatan"
+          />
+        </Field>
+
+        <Field
+          label="Bukti pembayaran"
+          className="sm:col-span-2"
+          hint="Unggah scan/foto bukti transfer. Tertaut pada riwayat pembayaran."
+          error={form.errors.proof}
+        >
+          <ImageUpload
+            id="payment_proof"
+            currentUrl={null}
+            file={form.data.proof}
+            removed={false}
+            emptyLabel="Opsional: unggah bukti transfer pembayaran."
+            sizeHint="PNG atau JPG, maksimal 5 MB."
+            onSelect={(file) => form.setData('proof', file)}
+            onRemove={() => form.setData('proof', null)}
           />
         </Field>
       </FormGrid>

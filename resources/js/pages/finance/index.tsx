@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRealtime } from '@/hooks/use-realtime';
+import { useCan } from '@/lib/use-can';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/finance';
 import type { Option, Paginated } from '@/types/crm';
@@ -55,6 +56,7 @@ export default function FinanceIndex({
 
   const [formModal, setFormModal] = useState<{ transaction?: FinanceTransaction } | null>(null);
   const [search, setSearch] = useState(filters.search);
+  const can = useCan();
 
   useEffect(() => {
     if (search === filters.search) {
@@ -151,10 +153,12 @@ export default function FinanceIndex({
               </div>
             )}
 
-            <Button onClick={() => setFormModal({})}>
-              <Plus className="size-4" />
-              Transaksi baru
-            </Button>
+            {can['manage-finance'] && (
+              <Button onClick={() => setFormModal({})}>
+                <Plus className="size-4" />
+                Transaksi baru
+              </Button>
+            )}
           </>
         }
       />
