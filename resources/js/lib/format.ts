@@ -40,6 +40,10 @@ export function rupiah(value: number | string | null | undefined): string {
   return rupiahFormatter.format(Number(value ?? 0));
 }
 
+export function rupiahOrCustom(value: number | string | null | undefined): string {
+  return value === null || value === undefined ? 'Custom' : rupiah(value);
+}
+
 export function rupiahCompact(value: number | string | null | undefined): string {
   return `Rp${compactFormatter.format(Number(value ?? 0))}`;
 }

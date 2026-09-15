@@ -43,7 +43,7 @@ function caretAfterDigit(formatted: string, digitCount: number): number {
 
 export type MoneyInputProps = {
   id?: string;
-  value: string | number;
+  value: string | number | null;
   onChange: (value: string) => void;
   min?: number;
   required?: boolean;

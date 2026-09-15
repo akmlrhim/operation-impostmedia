@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $service_id
  * @property string $name
- * @property string $price
+ * @property string|null $price
  * @property string $unit
  * @property ServiceBillingType $billing_type
  * @property bool $requires_visit

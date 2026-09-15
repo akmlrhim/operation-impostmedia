@@ -30,7 +30,7 @@ class ServiceRequest extends FormRequest
             'packages.*.id' => ['nullable', 'integer'],
             'packages.*.name' => ['required', 'string', 'max:255', 'distinct'],
             'packages.*.description' => ['nullable', 'string'],
-            'packages.*.price' => ['required', 'numeric', 'min:0'],
+            'packages.*.price' => ['nullable', 'numeric', 'min:0'],
             'packages.*.unit' => ['required', 'string', 'max:50'],
             'packages.*.billing_type' => ['required', Rule::enum(ServiceBillingType::class)],
             'packages.*.is_active' => ['boolean'],

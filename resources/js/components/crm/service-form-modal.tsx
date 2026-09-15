@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { rupiah } from '@/lib/format';
+import { rupiahOrCustom } from '@/lib/format';
 import { store, update } from '@/routes/services';
 import type { Option, ServiceItem, ServicePackage } from '@/types/crm';
 
@@ -219,7 +219,7 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
               <span className="text-xs font-medium text-muted-foreground">Paket {index + 1}</span>
 
               <div className="flex items-center gap-1">
-                <span className="text-sm font-medium">{rupiah(servicePackage.price)}</span>
+                <span className="text-sm font-medium">{rupiahOrCustom(servicePackage.price)}</span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -259,18 +259,35 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
               <Field
                 label="Harga"
                 htmlFor={`package-${index}-price`}
-                required
+                required={servicePackage.price !== null}
                 className="lg:col-span-2"
                 error={errors[`packages.${index}.price`]}
               >
-                <MoneyInput
-                  id={`package-${index}-price`}
-                  aria-label={`Harga paket ${index + 1}`}
-                  value={servicePackage.price}
-                  onChange={(value) => updatePackage(index, { price: value })}
-                  required
-                  placeholder="0"
-                />
+                {servicePackage.price === null ? (
+                  <p className="text-sm font-medium text-muted-foreground">Custom</p>
+                ) : (
+                  <MoneyInput
+                    id={`package-${index}-price`}
+                    aria-label={`Harga paket ${index + 1}`}
+                    value={servicePackage.price}
+                    onChange={(value) => updatePackage(index, { price: value })}
+                    required
+                    placeholder="0"
+                  />
+                )}
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Checkbox
+                    id={`package-${index}-custom-price`}
+                    checked={servicePackage.price === null}
+                    onCheckedChange={(checked) =>
+                      updatePackage(index, { price: checked ? null : '0' })
+                    }
+                  />
+                  <Label htmlFor={`package-${index}-custom-price`} className="font-normal">
+                    Harga custom
+                  </Label>
+                </div>
               </Field>
 
               <Field

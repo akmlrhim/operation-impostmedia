@@ -148,7 +148,7 @@ export type LineItem = {
   description: string | null;
   quantity: number | string;
   unit: string;
-  unit_price: number | string;
+  unit_price: number | string | null;
   amount?: number | string;
 };
 
@@ -259,7 +259,7 @@ export type ServicePackage = {
   id?: number;
   name: string;
   description: string | null;
-  price: number | string;
+  price: number | string | null;
   unit: string;
   billing_type: string;
   is_active: boolean;
@@ -285,7 +285,7 @@ export type ServiceOption = {
   packages: {
     id: number;
     name: string;
-    price: string;
+    price: string | null;
     unit: string;
     billing_type: string;
     points: { id: number; label: string }[];

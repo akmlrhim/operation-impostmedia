@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useRealtime } from '@/hooks/use-realtime';
-import { rupiah } from '@/lib/format';
+import { rupiahOrCustom } from '@/lib/format';
 import { destroy, index } from '@/routes/services';
 import type { Option, ServiceItem } from '@/types/crm';
 
@@ -145,7 +145,7 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                       </div>
 
                       <div className="num text-sm font-medium">
-                        {rupiah(servicePackage.price)}
+                        {rupiahOrCustom(servicePackage.price)}
                         <span className="text-muted-foreground"> / {servicePackage.unit}</span>
                       </div>
 

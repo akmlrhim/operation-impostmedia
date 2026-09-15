@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Field, FormGrid } from '@/components/crm/field';
 import { ServicePackageCombobox } from '@/components/crm/service-package-combobox';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -41,6 +42,20 @@ export function LineItemsEditor({
 
   function update(index: number, patch: Partial<LineItem>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  }
+
+  function isCustomPackage(index: number): boolean {
+    const packageId = items[index].service_package_id;
+
+    if (packageId === null) {
+      return false;
+    }
+
+    const picked = services
+      .flatMap((service) => service.packages)
+      .find((servicePackage) => servicePackage.id === packageId);
+
+    return picked?.price === null;
   }
 
   async function writeDescription(index: number) {
@@ -101,7 +116,14 @@ export function LineItemsEditor({
         {items.map((item, index) => (
           <div key={index} className="space-y-4 rounded-lg border p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-medium text-muted-foreground">Baris {index + 1}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Baris {index + 1}</span>
+                {isCustomPackage(index) && (
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                    Custom
+                  </Badge>
+                )}
+              </div>
 
               <div className="flex items-center gap-1">
                 <span className="text-sm font-medium">{rupiah(lineAmount(item))}</span>
@@ -187,6 +209,11 @@ export function LineItemsEditor({
                 htmlFor={`item-${index}-unit-price`}
                 required
                 className="lg:col-span-2"
+                hint={
+                  item.unit_price === null
+                    ? 'Paket ini berharga custom, isi nominal hasil kesepakatan.'
+                    : undefined
+                }
                 error={errors[`items.${index}.unit_price`]}
               >
                 <MoneyInput
@@ -195,7 +222,7 @@ export function LineItemsEditor({
                   value={item.unit_price}
                   onChange={(value) => update(index, { unit_price: value })}
                   required
-                  placeholder="0"
+                  placeholder={item.unit_price === null ? 'Nominal kesepakatan' : '0'}
                 />
               </Field>
 

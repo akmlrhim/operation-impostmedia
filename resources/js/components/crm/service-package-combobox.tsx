@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { rupiah } from '@/lib/format';
+import { rupiahOrCustom } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ServiceOption } from '@/types/crm';
 
@@ -145,7 +145,7 @@ export function ServicePackageCombobox({
                   />
                   <span className="flex-1 truncate">{servicePackage.name}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {rupiah(servicePackage.price)} / {servicePackage.unit}
+                    {rupiahOrCustom(servicePackage.price)} / {servicePackage.unit}
                   </span>
                 </button>
               ))}
