@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 import { Field, FormGrid } from '@/components/crm/field';
 import { FormModal } from '@/components/crm/form-modal';
 import InputError from '@/components/input-error';
@@ -71,6 +72,44 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
         i === pointIndex ? { ...point, label } : point,
       ),
     });
+  }
+
+  function pointId(packageIndex: number, pointIndex: number) {
+    return `package-${packageIndex}-point-${pointIndex}`;
+  }
+
+  function addPoint(packageIndex: number, pointIndex: number) {
+    const points = [...form.data.packages[packageIndex].points];
+    points.splice(pointIndex + 1, 0, { label: '' });
+    updatePackage(packageIndex, { points });
+    requestAnimationFrame(() =>
+      document.getElementById(pointId(packageIndex, pointIndex + 1))?.focus(),
+    );
+  }
+
+  function handlePointKeyDown(
+    packageIndex: number,
+    pointIndex: number,
+    event: KeyboardEvent<HTMLInputElement>,
+  ) {
+    const points = form.data.packages[packageIndex].points;
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addPoint(packageIndex, pointIndex);
+
+      return;
+    }
+
+    if (event.key === 'Backspace' && points[pointIndex].label === '' && points.length > 1) {
+      event.preventDefault();
+      const remaining = points.filter((_, i) => i !== pointIndex);
+      updatePackage(packageIndex, { points: remaining });
+      const focusIndex = Math.max(0, pointIndex - 1);
+      requestAnimationFrame(() =>
+        document.getElementById(pointId(packageIndex, focusIndex))?.focus(),
+      );
+    }
   }
 
   return (
@@ -300,15 +339,22 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
               </div>
 
               <div className="space-y-2 sm:col-span-2 lg:col-span-6">
-                <Label className="text-sm">Poin yang didapat</Label>
+                <div className="flex items-baseline justify-between gap-3">
+                  <Label className="text-sm">Poin yang didapat</Label>
+                  <span className="text-xs text-muted-foreground">
+                    Enter untuk menambah poin, Backspace pada poin kosong untuk menghapus
+                  </span>
+                </div>
 
                 {servicePackage.points.map((point, pointIndex) => (
                   <div key={pointIndex} className="flex items-start gap-2">
                     <div className="flex-1">
                       <Input
+                        id={pointId(index, pointIndex)}
                         aria-label={`Poin ${pointIndex + 1} paket ${index + 1}`}
                         value={point.label}
                         onChange={(e) => updatePoint(index, pointIndex, e.target.value)}
+                        onKeyDown={(e) => handlePointKeyDown(index, pointIndex, e)}
                         placeholder="8 Konten Feed Design"
                       />
                       <InputError
