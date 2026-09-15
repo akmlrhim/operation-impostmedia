@@ -44,6 +44,14 @@ export function rupiahOrCustom(value: number | string | null | undefined): strin
   return value === null || value === undefined ? 'Custom' : rupiah(value);
 }
 
+export function unitPriceSuffix(value: number | string | null | undefined, unit: string): string {
+  if (value !== null && value !== undefined && unit !== 'paket') {
+    return ` / ${unit}`;
+  }
+
+  return '';
+}
+
 export function rupiahCompact(value: number | string | null | undefined): string {
   return `Rp${compactFormatter.format(Number(value ?? 0))}`;
 }

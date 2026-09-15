@@ -31,6 +31,7 @@ class ServiceRequest extends FormRequest
             'packages.*.name' => ['required', 'string', 'max:255', 'distinct'],
             'packages.*.description' => ['nullable', 'string'],
             'packages.*.price' => ['nullable', 'numeric', 'min:0'],
+            'packages.*.quantity' => ['nullable', 'integer', 'min:1'],
             'packages.*.unit' => ['required', 'string', 'max:50'],
             'packages.*.billing_type' => ['required', Rule::enum(ServiceBillingType::class)],
             'packages.*.is_active' => ['boolean'],
@@ -59,6 +60,7 @@ class ServiceRequest extends FormRequest
             'packages' => 'paket',
             'packages.*.name' => 'nama paket',
             'packages.*.price' => 'harga paket',
+            'packages.*.quantity' => 'jumlah paket',
             'packages.*.unit' => 'satuan paket',
             'packages.*.points.*.label' => 'poin paket',
         ];

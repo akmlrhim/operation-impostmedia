@@ -260,6 +260,7 @@ export type ServicePackage = {
   name: string;
   description: string | null;
   price: number | string | null;
+  quantity: number | string;
   unit: string;
   billing_type: string;
   is_active: boolean;
@@ -286,6 +287,7 @@ export type ServiceOption = {
     id: number;
     name: string;
     price: string | null;
+    quantity: string;
     unit: string;
     billing_type: string;
     points: { id: number; label: string }[];

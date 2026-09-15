@@ -1,10 +1,10 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { PackagePrice } from '@/components/crm/package-price';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { rupiahOrCustom } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ServiceOption } from '@/types/crm';
 
@@ -145,7 +145,11 @@ export function ServicePackageCombobox({
                   />
                   <span className="flex-1 truncate">{servicePackage.name}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {rupiahOrCustom(servicePackage.price)} / {servicePackage.unit}
+                    <PackagePrice
+                      price={servicePackage.price}
+                      quantity={servicePackage.quantity}
+                      unit={servicePackage.unit}
+                    />
                   </span>
                 </button>
               ))}

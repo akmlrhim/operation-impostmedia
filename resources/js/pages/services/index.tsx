@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useConfirm } from '@/components/crm/confirm-dialog';
+import { PackagePrice } from '@/components/crm/package-price';
 import { PageBody } from '@/components/crm/page-body';
 import { PageHeader } from '@/components/crm/page-header';
 import { RowActions } from '@/components/crm/row-actions';
@@ -10,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useRealtime } from '@/hooks/use-realtime';
-import { rupiahOrCustom } from '@/lib/format';
 import { destroy, index } from '@/routes/services';
 import type { Option, ServiceItem } from '@/types/crm';
 
@@ -145,8 +145,11 @@ export default function ServicesIndex({ services, types, billingTypes }: Props) 
                       </div>
 
                       <div className="num text-sm font-medium">
-                        {rupiahOrCustom(servicePackage.price)}
-                        <span className="text-muted-foreground"> / {servicePackage.unit}</span>
+                        <PackagePrice
+                          price={servicePackage.price}
+                          quantity={servicePackage.quantity}
+                          unit={servicePackage.unit}
+                        />
                       </div>
 
                       <div className="text-xs text-muted-foreground">

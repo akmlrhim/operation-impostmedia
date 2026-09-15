@@ -8,8 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { rupiah } from '@/lib/format';
+import { unitOptions } from '@/lib/service-units';
 import type { LineItem, ServiceOption } from '@/types/crm';
 
 export const emptyLineItem: LineItem = {
@@ -168,7 +176,7 @@ export function LineItemsEditor({
               </Field>
 
               <Field
-                label="Volume"
+                label="Jumlah"
                 htmlFor={`item-${index}-quantity`}
                 required
                 className="lg:col-span-2"
@@ -176,7 +184,7 @@ export function LineItemsEditor({
               >
                 <Input
                   id={`item-${index}-quantity`}
-                  aria-label={`Volume baris ${index + 1}`}
+                  aria-label={`Jumlah baris ${index + 1}`}
                   type="number"
                   min="0"
                   step="0.01"
@@ -194,14 +202,18 @@ export function LineItemsEditor({
                 className="lg:col-span-2"
                 error={errors[`items.${index}.unit`]}
               >
-                <Input
-                  id={`item-${index}-unit`}
-                  aria-label={`Satuan baris ${index + 1}`}
-                  value={item.unit}
-                  onChange={(e) => update(index, { unit: e.target.value })}
-                  required
-                  placeholder="bulan"
-                />
+                <Select value={item.unit} onValueChange={(value) => update(index, { unit: value })}>
+                  <SelectTrigger id={`item-${index}-unit`} aria-label={`Satuan baris ${index + 1}`}>
+                    <SelectValue placeholder="Pilih satuan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitOptions(item.unit).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field

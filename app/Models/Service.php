@@ -87,7 +87,7 @@ class Service extends Model
             ->whereHas('packages', fn (Builder $query) => $query->where('is_active', true))
             ->with(['packages' => fn (Relation $query) => $query
                 ->where('is_active', true)
-                ->select(['id', 'service_id', 'name', 'price', 'unit', 'billing_type', 'position'])
+                ->select(['id', 'service_id', 'name', 'price', 'quantity', 'unit', 'billing_type', 'position'])
                 ->with('points:id,service_package_id,label'),
             ])
             ->orderBy('created_at')

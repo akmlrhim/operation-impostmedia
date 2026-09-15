@@ -81,6 +81,7 @@ class ServiceController extends Controller
             $points = $package['points'] ?? [];
             $id = $package['id'] ?? null;
             unset($package['points'], $package['id']);
+            $package['quantity'] = $package['quantity'] ?? 1;
 
             $model = $existing->get($id) ?? $service->packages()->make();
             $model->fill([...$package, 'position' => $position])->save();

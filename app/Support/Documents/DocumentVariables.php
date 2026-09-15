@@ -24,7 +24,7 @@ class DocumentVariables
                 ['key' => 'dokumen.tempat', 'label' => 'Tempat penandatanganan'],
                 ['key' => 'dokumen.mulai', 'label' => 'Tanggal mulai'],
                 ['key' => 'dokumen.selesai', 'label' => 'Tanggal berakhir'],
-                ['key' => 'dokumen.durasi', 'label' => 'Lama kontrak (mis. 3 (tiga) bulan)'],
+                ['key' => 'dokumen.durasi', 'label' => 'Lama kontrak (mis. 3 (tiga) bulan atau 12 (dua belas) hari)'],
             ]],
             ['group' => 'Klien', 'items' => [
                 ['key' => 'klien.perusahaan', 'label' => 'Nama perusahaan klien'],
@@ -189,7 +189,13 @@ class DocumentVariables
             return '-';
         }
 
-        $months = max(1, (int) round($start->diffInDays($end) / 30));
+        $days = max(1, (int) $start->diffInDays($end));
+
+        if ($days < 30) {
+            return $days.' ('.self::spellOut($days).') hari';
+        }
+
+        $months = max(1, (int) round($days / 30));
 
         return $months.' ('.self::spellOut($months).') bulan';
     }

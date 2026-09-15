@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $service_id
  * @property string $name
  * @property string|null $price
+ * @property int $quantity
  * @property string $unit
  * @property ServiceBillingType $billing_type
  * @property bool $requires_visit
@@ -36,6 +37,7 @@ class ServicePackage extends Model
         return [
             'billing_type' => ServiceBillingType::class,
             'price' => 'decimal:2',
+            'quantity' => 'integer',
             'position' => 'integer',
             'is_active' => 'boolean',
             'requires_visit' => 'boolean',

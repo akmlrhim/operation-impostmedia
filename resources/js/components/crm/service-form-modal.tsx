@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { Field, FormGrid } from '@/components/crm/field';
 import { FormModal } from '@/components/crm/form-modal';
+import { PackagePrice } from '@/components/crm/package-price';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { rupiahOrCustom } from '@/lib/format';
+import { unitOptions } from '@/lib/service-units';
 import { store, update } from '@/routes/services';
 import type { Option, ServiceItem, ServicePackage } from '@/types/crm';
 
@@ -32,6 +33,7 @@ const emptyPackage: ServicePackage = {
   name: '',
   description: null,
   price: '0',
+  quantity: '1',
   unit: 'paket',
   billing_type: 'one_time',
   is_active: true,
@@ -219,7 +221,13 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
               <span className="text-xs font-medium text-muted-foreground">Paket {index + 1}</span>
 
               <div className="flex items-center gap-1">
-                <span className="text-sm font-medium">{rupiahOrCustom(servicePackage.price)}</span>
+                <span className="text-sm font-medium">
+                  <PackagePrice
+                    price={servicePackage.price}
+                    quantity={servicePackage.quantity}
+                    unit={servicePackage.unit}
+                  />
+                </span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -297,19 +305,52 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
                 className="lg:col-span-2"
                 error={errors[`packages.${index}.unit`]}
               >
-                <Input
-                  id={`package-${index}-unit`}
-                  aria-label={`Satuan paket ${index + 1}`}
+                <Select
                   value={servicePackage.unit}
-                  onChange={(e) => updatePackage(index, { unit: e.target.value })}
-                  required
-                  placeholder="bulan"
+                  onValueChange={(value) => updatePackage(index, { unit: value })}
+                >
+                  <SelectTrigger id={`package-${index}-unit`}>
+                    <SelectValue placeholder="Pilih satuan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitOptions(servicePackage.unit).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field
+                label={`Jumlah ${servicePackage.unit}`}
+                htmlFor={`package-${index}-quantity`}
+                required={servicePackage.unit !== 'paket'}
+                className="lg:col-span-2"
+                hint={
+                  servicePackage.unit === 'paket'
+                    ? 'Paket utuh selalu berjumlah 1.'
+                    : 'Hanya keterangan, mis. 12 hari. Harga tetap total, tidak dikali jumlah.'
+                }
+                error={errors[`packages.${index}.quantity`]}
+              >
+                <Input
+                  id={`package-${index}-quantity`}
+                  aria-label={`Jumlah paket ${index + 1}`}
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={servicePackage.quantity}
+                  disabled={servicePackage.unit === 'paket'}
+                  onChange={(e) => updatePackage(index, { quantity: e.target.value })}
+                  required={servicePackage.unit !== 'paket'}
+                  placeholder="1"
                 />
               </Field>
 
               <Field
                 label="Model penagihan"
-                className="lg:col-span-3"
+                className="lg:col-span-2"
                 error={errors[`packages.${index}.billing_type`]}
               >
                 <Select
@@ -329,7 +370,7 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
                 </Select>
               </Field>
 
-              <div className="flex items-center gap-2 lg:col-span-3 lg:pt-6">
+              <div className="flex items-center gap-2 lg:col-span-2 lg:pt-6">
                 <Checkbox
                   id={`package-${index}-active`}
                   checked={servicePackage.is_active}
@@ -342,7 +383,7 @@ export function ServiceFormModal({ service, types, billingTypes, onClose }: Prop
                 </Label>
               </div>
 
-              <div className="flex items-center gap-2 lg:col-span-3 lg:pt-6">
+              <div className="flex items-center gap-2 lg:col-span-2 lg:pt-6">
                 <Checkbox
                   id={`package-${index}-visit`}
                   checked={servicePackage.requires_visit}
